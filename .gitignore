@@ -1,0 +1,11 @@
+# Node.js
+node_modules/
+
+# Stream Deck files (build output and runtime logs)
+*.sdPlugin/bin
+*.sdPlugin/logs
+
+# Packaged plugin output
+*.streamDeckPlugin
+
+.DS_Store

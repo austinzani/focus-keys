@@ -1,0 +1,43 @@
+{
+	"$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+	"Name": "Neo Pomodoro",
+	"Version": "0.1.0.0",
+	"Author": "Austin Zani",
+	"Actions": [
+		{
+			"Name": "Timer Preset",
+			"UUID": "com.austinzani.neo-pomodoro.preset",
+			"Icon": "imgs/actions/preset/icon",
+			"Tooltip": "Starts a whole-minute countdown. Shows remaining minutes with a progress ring.",
+			"Controllers": ["Keypad"],
+			"SupportedInMultiActions": false,
+			"UserTitleEnabled": false,
+			"States": [
+				{
+					"Image": "imgs/actions/preset/key",
+					"ShowTitle": false
+				}
+			]
+		}
+	],
+	"Category": "Neo Pomodoro",
+	"CategoryIcon": "imgs/plugin/category-icon",
+	"CodePath": "bin/plugin.js",
+	"Description": "A calm whole-minute countdown for Stream Deck Neo keys. No seconds, just minutes and a progress ring.",
+	"Icon": "imgs/plugin/marketplace",
+	"SDKVersion": 3,
+	"Software": {
+		"MinimumVersion": "7.1"
+	},
+	"OS": [
+		{
+			"Platform": "mac",
+			"MinimumVersion": "12"
+		}
+	],
+	"Nodejs": {
+		"Version": "24",
+		"Debug": "enabled"
+	},
+	"UUID": "com.austinzani.neo-pomodoro"
+}
