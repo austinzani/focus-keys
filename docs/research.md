@@ -4,7 +4,7 @@ Research date: November 23, 2026. This is a feasibility note; the draft spec rec
 
 ## Working product scope
 
-This summarizes the discussion; the spec and implementation tickets remain subject to review.
+This summarizes the discussion; the approved spec and implementation tickets live in Linear.
 
 - Mac-only Stream Deck plugin, initially installed and tested on the owner's Neo; prepare for Marketplace publication after successful testing.
 - Four configurable duration actions, initially 5, 15, 30, and 60 minutes. Only one timer runs at a time. Starting another duration replaces the current timer without a completion alert.

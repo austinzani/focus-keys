@@ -1,6 +1,6 @@
 # Spec: Stream Deck Neo Pomodoro Timer
 
-Draft for seam and ticket review. The product name is provisional.
+Approved for implementation planning. The product name is provisional. The Linear spec is the tracker source of truth.
 
 ## Problem Statement
 

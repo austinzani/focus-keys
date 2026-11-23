@@ -1,6 +1,14 @@
 # Proposed implementation tickets
 
-Draft: ticket titles, acceptance criteria, and dependencies require user review. The numbered blockers below describe real implementation dependencies, not issue identifiers.
+Approved and published in Linear. The numbered blockers below describe the approved dependencies; the tracker holds the native blocking links and current status.
+
+1. AUS-1879
+2. AUS-1880
+3. AUS-1881
+4. AUS-1882
+5. AUS-1883
+6. AUS-1884
+7. AUS-1885
 
 ## 1. Run a whole-minute countdown on one Neo key
 
