@@ -121,9 +121,9 @@ Sound on. Focus switching on for item 11 only.
 
 The full list is every **owner** and **asset** row in [MARKETPLACE.md](MARKETPLACE.md) › Requirement checklist. The main ones:
 
-- [ ] Final plugin name and UUID (must be fixed before first publish; name and price lock when the product is created).
+- [x] Name and UUID: Focus Keys / `com.austinzani.focus-keys` (2026-11-24). Still to do: a formal trademark search before creating the product.
 - [ ] Price, and Marketplace type and tags.
-- [ ] One-action review risk: submit as is with a note to reviewers, or add a second action.
+- [x] Second action: Break added (2026-11-24).
 - [ ] Approve the Maker Console app icon, thumbnail and gallery (captions, a photo or video of the Neo).
 - [ ] AI disclosure wording for the submission.
 - [ ] Public identity: Maker organization and handle, and the manifest `Author`.
@@ -133,7 +133,7 @@ The full list is every **owner** and **asset** row in [MARKETPLACE.md](MARKETPLA
 Product calls from this pass:
 
 - [ ] Notification helper (Developer ID signed and notarized) shows banners as Focus Keys after installing the package: yes/no.
-- [ ] Focus recovery rule (**On end** runs once after any gap, however long): acceptable?
+- [x] Focus recovery rule (**On end** runs once after any gap, however long): kept, no cutoff (2026-11-24).
 
 ## Results
 
