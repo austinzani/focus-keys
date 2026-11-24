@@ -127,8 +127,8 @@ The full list is every **owner** and **asset** row in [MARKETPLACE.md](MARKETPLA
 - [ ] Approve the Maker Console app icon, thumbnail and gallery (captions, a photo or video of the Neo).
 - [ ] AI disclosure wording for the submission.
 - [ ] Public identity: Maker organization and handle, and the manifest `Author`.
-- [ ] Source license for this project (or none / all rights reserved).
-- [ ] Support URL and privacy statement link.
+- [x] Source license: MIT (2026-11-24).
+- [x] Support URL and privacy statement: GitHub Issues and the user guide Privacy section (2026-11-24; live once the repo is public).
 
 Product calls from this pass:
 

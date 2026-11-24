@@ -24,3 +24,7 @@ npx streamdeck dev   # once per machine: Stream Deck developer mode
 npm run link         # link the plugin into Stream Deck, then: npm run restart
 npm run package      # build, validate and pack release/com.austinzani.focus-keys.streamDeckPlugin
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE). Bundled fonts (SIL OFL 1.1) and libraries keep their own licenses; see [docs/MARKETPLACE.md](docs/MARKETPLACE.md#licensing).

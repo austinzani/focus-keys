@@ -2,6 +2,7 @@
 	"name": "focus-keys",
 	"version": "0.1.0",
 	"private": true,
+	"license": "MIT",
 	"description": "Focus Keys: Mac-only Stream Deck plugin with whole-minute countdown timers.",
 	"type": "module",
 	"scripts": {

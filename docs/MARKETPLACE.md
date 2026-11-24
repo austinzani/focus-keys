@@ -29,7 +29,7 @@ Status: **done**, **owner** (needs an owner decision or action), **asset** (need
 | Third-party licenses ship with the plugin | done | `licenses/fonts/` (5 × SIL OFL 1.1 + NOTICE), `ui/vendor/LICENSES.md` (sdpi-components MIT, Lit BSD-3-Clause), `bin/THIRD_PARTY_LICENSES.txt` (bundled npm code: @elgato/streamdeck, @elgato/utils, @elgato/schemas, @streamdeck/core, ws, zod: MIT; tslib: 0BSD). |
 | `OS` declares only supported platforms | done | `mac`, minimum 12. Reviewers check device and OS claims. |
 | Category and action names ≤ ~30 characters, category same as or close to plugin name, tooltips set | done | Category "Focus Keys", actions "Timer Preset" and "Break", tooltips set. |
-| Optional `URL` / `SupportURL` in manifest | owner | Not set. Add once a support page exists (`SupportURL` needs Stream Deck 6.9+). |
+| Optional `SupportURL` in manifest (per action; the schema has no plugin-level URL) | done | Both actions link to GitHub Issues. Update if the repo is renamed. |
 | Guideline: offer 2 to 30 actions | done | Two actions: Timer Preset and Break (a timer that never switches Focus). |
 | Bundled native binary (notification helper `notifier/Focus Keys.app`) | owner | Must be Developer ID signed and notarized before packaging a release (`npm run notifier -- --sign … --notarize …`; see DEVELOPMENT.md). UNVERIFIED: whether Elgato's DRM leaves bundled binaries untouched (a modified binary breaks its signature). If it doesn't, banners fall back to Script Editor. Check after the first upload, or ask maker@elgato.com. Mention the helper in the review notes. |
 | Use `showAlert` when an action fails | partial | Shown when a Focus shortcut fails. A failed sound or notification (`afplay`/`osascript`) is only logged; the timer itself has no failure case. |
@@ -60,8 +60,8 @@ All plugin images and drafts come from `npm run icons` (`scripts/generate-icons.
 | Tags and type (category) | owner | Set in Maker Console › Details. Suggested below. |
 | Release notes for every version | done (draft) | See below. |
 | Price | owner | Free suggested for 0.1. |
-| Privacy policy | owner | Required only if the plugin collects identifiable data. It doesn't: no network access, no analytics. A short privacy statement link is still worth adding (text in [USER_GUIDE.md](USER_GUIDE.md) › Privacy). |
-| Support / website links | owner | Optional. A public issue tracker or a page with the user guide works. |
+| Privacy policy | done (once the repo is public) | Required only if the plugin collects identifiable data. It doesn't: no network access, no analytics. Link the user guide's Privacy section: https://github.com/austinzani/stream-deck-neo-pomodoro/blob/main/docs/USER_GUIDE.md#privacy |
+| Support / website links | done (once the repo is public) | Support: https://github.com/austinzani/stream-deck-neo-pomodoro/issues. Website: the repo. |
 | AI disclosure | owner | Elgato requires disclosing AI use, and products made entirely by AI aren't eligible. This plugin was written with substantial AI assistance under the owner's direction, review and testing. Describe that honestly in the submission. Whether it qualifies is Elgato's call. |
 | Brand spelling | done | Copy uses "Stream Deck", "Stream Deck Neo", "plugin", "key" per https://docs.elgato.com/guidelines/branding. |
 
@@ -135,9 +135,9 @@ Claims are limited to behavior in the code and the user guide; Focus restore and
 | Lit (inside sdpi-components) | BSD-3-Clause | `ui/vendor/LICENSES.md` |
 | @elgato/streamdeck and its runtime dependencies, bundled into `plugin.js` | MIT; tslib 0BSD | `bin/THIRD_PARTY_LICENSES.txt` |
 | macOS system sounds | Not bundled; played from `/System/Library/Sounds` | none needed |
-| This project's own source | **Owner decision.** No LICENSE file yet, so it's all rights reserved by default | |
+| This project's own source | MIT | `LICENSE` (repo root), `LICENSE.txt` (in the plugin) |
 
-Source license options: keep it closed (fine for the Marketplace; Elgato's DRM covers the published build), MIT (simplest permissive), Apache-2.0 (permissive with a patent grant), or GPL-3.0 (copyleft; forks must stay open). Any of these works with the bundled licenses above.
+Source license: MIT, chosen by the owner on 2026-11-24. It is compatible with every bundled license above.
 
 ## Owner steps to submit
 
