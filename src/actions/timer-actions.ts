@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 import streamDeck, {
 	action,
 	type DidReceiveSettingsEvent,
@@ -13,7 +15,7 @@ import streamDeck, {
 } from "@elgato/streamdeck";
 
 import { AlertDispatcher } from "../alerts/dispatcher";
-import { AfplaySoundPlayer, OsascriptNotifier } from "../alerts/macos";
+import { AfplaySoundPlayer, FallbackNotifier, HelperNotifier, OsascriptNotifier } from "../alerts/macos";
 import { systemClock } from "../core/clock";
 import { defaultColorFor, parseDuration, type PresetSettings, type TimerKind } from "../core/coordinator";
 import { FocusDispatcher } from "../focus/dispatcher";
@@ -26,6 +28,9 @@ import { PresetController } from "./preset-controller";
 
 export const PRESET_ACTION_UUID = "com.austinzani.focus-keys.preset";
 export const BREAK_ACTION_UUID = "com.austinzani.focus-keys.break";
+
+/** The bundled notification helper (built by `npm run notifier`), next to bin/plugin.js in the plugin folder. */
+const NOTIFIER_APP = fileURLToPath(new URL("../notifier/Focus Keys.app", import.meta.url));
 
 type TimerKey = KeyAction<PresetSettings>;
 type SettingsTarget = { id: string; setSettings(s: PresetSettings): Promise<void> };
@@ -56,7 +61,7 @@ export class TimerKeys {
 			alerts: new AlertDispatcher({
 				loadSettings: () => streamDeck.settings.getGlobalSettings(),
 				sound: new AfplaySoundPlayer(),
-				notifier: new OsascriptNotifier(),
+				notifier: new FallbackNotifier(new HelperNotifier(NOTIFIER_APP), new OsascriptNotifier(), streamDeck.logger),
 				log: streamDeck.logger,
 				// None when this run can't save (logged once at startup), so alerts don't each report a failed save.
 				delivery: store.alertDelivery(),

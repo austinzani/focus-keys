@@ -19,6 +19,7 @@ Linear project: Stream Deck Neo — Pomodoro Timer.
 ```sh
 npm install
 npm run build        # bundle src/ into the .sdPlugin folder
+npm run notifier     # build the notification helper app (ad-hoc signed; see docs/DEVELOPMENT.md for release signing)
 npx streamdeck dev   # once per machine: Stream Deck developer mode
 npm run link         # link the plugin into Stream Deck, then: npm run restart
 npm run package      # build, validate and pack release/com.austinzani.focus-keys.streamDeckPlugin

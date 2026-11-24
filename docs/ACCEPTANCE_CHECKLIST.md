@@ -57,11 +57,11 @@ Use a 1-minute key.
 - [ ] 3. Try at least two other sounds (Hero, Ping, Submarine, Funk, Blow, Purr, Tink). Each plays once. (`afplay /System/Library/Sounds/Hero.aiff` auditions them in Terminal.)
 - [ ] 4. **None (silent)**: a finish shows **0** with no sound.
 - [ ] 5. Another key's Property Inspector shows the same alert settings; changes apply to all keys.
-- [ ] 6. Check **Show a macOS notification**, text empty. On finish a banner from **Script Editor** reads "Focus Keys / Time's up: 1-minute timer finished." Only the chosen sound plays. Note whether macOS asked permission.
+- [ ] 6. Check **Show a macOS notification**, text empty. On finish macOS asks whether **Focus Keys** may send notifications; allow. A banner from **Focus Keys** (ring icon) reads "Focus Keys / Time's up: 1-minute timer finished." Only the chosen sound plays. If it came from Script Editor instead, the log says why (`Notification helper failed`): that's a blocker for the helper, not for release (the fallback works).
 - [ ] 7. Text `Stretch "now" — {minutes} min 🍅`: the banner shows it exactly with `{minutes}` replaced.
 - [ ] 8. Sound **None** with notification on: silent banner. A sound with notification off: sound only.
-- [ ] 9. System Settings › Notifications › Script Editor › Allow notifications off: a finish still shows **0** and plays the sound; the next timer starts normally. Turn it back on.
-- [ ] 10. A Focus that doesn't allow Script Editor: the banner may not show; the sound plays.
+- [ ] 9. System Settings › Notifications › Focus Keys › Allow notifications off: a finish still shows **0** and plays the sound, no Script Editor banner appears, the next timer starts normally. Turn it back on.
+- [ ] 10. A Focus that doesn't allow Focus Keys: the banner may not show; the sound plays.
 - [ ] 11. Start, hold to cancel, wait past the end: nothing plays. Start a 1-minute key, press another before it ends: no alert at the first minute, only when the second timer ends.
 - [ ] 12. Start a 1-minute key and switch pages: the sound plays once on time; switching back shows **0**.
 - [ ] 13. Log shows `alert session=…` lines and no errors.
@@ -132,7 +132,7 @@ The full list is every **owner** and **asset** row in [MARKETPLACE.md](MARKETPLA
 
 Product calls from this pass:
 
-- [ ] Notifications attributed to Script Editor: acceptable for release?
+- [ ] Notification helper (Developer ID signed and notarized) shows banners as Focus Keys after installing the package: yes/no.
 - [ ] Focus recovery rule (**On end** runs once after any gap, however long): acceptable?
 
 ## Results

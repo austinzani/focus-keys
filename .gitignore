@@ -16,3 +16,6 @@ focus-prototype-*.jsonl
 
 # npm run package output (package + gallery renders)
 release/
+
+# Notification helper app built by npm run notifier (signed per machine; never committed)
+*.sdPlugin/notifier/

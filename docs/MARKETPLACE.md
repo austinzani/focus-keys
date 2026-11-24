@@ -31,6 +31,7 @@ Status: **done**, **owner** (needs an owner decision or action), **asset** (need
 | Category and action names ≤ ~30 characters, category same as or close to plugin name, tooltips set | done | Category "Focus Keys", actions "Timer Preset" and "Break", tooltips set. |
 | Optional `URL` / `SupportURL` in manifest | owner | Not set. Add once a support page exists (`SupportURL` needs Stream Deck 6.9+). |
 | Guideline: offer 2 to 30 actions | done | Two actions: Timer Preset and Break (a timer that never switches Focus). |
+| Bundled native binary (notification helper `notifier/Focus Keys.app`) | owner | Must be Developer ID signed and notarized before packaging a release (`npm run notifier -- --sign … --notarize …`; see DEVELOPMENT.md). UNVERIFIED: whether Elgato's DRM leaves bundled binaries untouched (a modified binary breaks its signature). If it doesn't, banners fall back to Script Editor. Check after the first upload, or ask maker@elgato.com. Mention the helper in the review notes. |
 | Use `showAlert` when an action fails | partial | Shown when a Focus shortcut fails. A failed sound or notification (`afplay`/`osascript`) is only logged; the timer itself has no failure case. |
 | ≤ 10 key updates per second | done | Keys redraw only on ring steps, minute boundaries and state changes. |
 
@@ -86,7 +87,7 @@ Claims are limited to behavior in the code and the user guide; Focus restore and
 >
 > Each key shows its minutes in large type. While a session runs, a ring around the number shrinks as time passes; there are no seconds to watch. Tap the running key to pause or resume, hold it to cancel, or tap another key to switch presets. One session runs at a time.
 >
-> When time is up, the key shows 0 and the plugin plays one of the built-in macOS sounds. It can also show a macOS notification with your own text. macOS lists these notifications under Script Editor.
+> When time is up, the key shows 0 and the plugin plays one of the built-in macOS sounds. It can also show a macOS notification with your own text.
 >
 > Give each key its own color and one of five number fonts. Durations run from 1 to 180 minutes.
 >
@@ -112,7 +113,7 @@ Claims are limited to behavior in the code and the user guide; Focus restore and
 **Known limitations (state them in the listing or the support page):**
 
 - Mac only.
-- Notifications appear under Script Editor in System Settings › Notifications, and a Focus can hide them. The sound plays either way.
+- A Focus can hide notifications. The sound plays either way.
 - Focus switching runs your shortcuts; it doesn't restore the previous Focus or notice manual changes. If Focus is shared across devices, your other devices follow.
 - A Mac that's asleep can't play the alert; it plays once on wake.
 - One timer at a time.

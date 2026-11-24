@@ -16,6 +16,7 @@
 		"glyphs": "node scripts/generate-glyphs.mjs",
 		"preview": "node scripts/preview.mjs",
 		"icons": "node scripts/generate-icons.mjs",
+		"notifier": "node scripts/build-notifier.mjs",
 		"package": "node scripts/package.mjs"
 	},
 	"dependencies": {

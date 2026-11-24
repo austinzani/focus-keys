@@ -1,8 +1,9 @@
 // Builds, validates and packs the plugin into release/<uuid>.streamDeckPlugin for direct install or Maker Console upload.
+// Needs the notification helper (npm run notifier) and warns when it isn't notarized.
 // Refuses to pack a development manifest (Nodejs.Debug set) or a manifest/package.json version mismatch.
 // Usage: npm run package
 import { execFileSync } from "node:child_process";
-import { readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,6 +28,17 @@ if (manifest.Version !== `${pkg.version}.0`) {
 }
 
 const run = (cmd, args) => execFileSync(cmd, args, { cwd: root, stdio: "inherit" });
+
+// The notification helper app is built separately (signing is per machine) and must be in the plugin folder.
+const notifierApp = join(root, sdPlugin, "notifier", "Focus Keys.app");
+if (!existsSync(notifierApp)) fail(`build the notification helper first: npm run notifier (see scripts/build-notifier.mjs).`);
+let notarized = true;
+try {
+	execFileSync("xcrun", ["stapler", "validate", notifierApp], { stdio: "ignore" });
+} catch {
+	notarized = false;
+}
+
 run("npx", ["rollup", "-c"]);
 // pack validates first and refuses to bundle an invalid plugin. It also rewrites manifest.json in its own
 // formatting, so the committed text is put back afterwards.
@@ -38,3 +50,6 @@ try {
 
 const file = join(outDir, `${manifest.UUID}.streamDeckPlugin`);
 console.log(`\n${file} (${(statSync(file).size / 1024).toFixed(1)} KiB, version ${manifest.Version})`);
+if (!notarized) {
+	console.warn("WARNING: the notification helper isn't notarized. Fine on this Mac; rebuild it with --sign/--notarize before a release (scripts/build-notifier.mjs).");
+}

@@ -77,10 +77,11 @@ The sound follows your Mac's output volume and mute. It doesn't depend on notifi
 
 About notifications:
 
-- macOS shows them as coming from **Script Editor**, not from Stream Deck or Focus Keys, because the plugin uses AppleScript's `display notification`. To allow, block or restyle them, use **System Settings › Notifications › Script Editor**. That setting also covers any other script that uses `display notification`.
-- The first notification may make macOS ask whether Script Editor can send notifications. Allow it.
-- A Focus can hide the banner unless Script Editor is allowed in that Focus. Notification Center may still list it. The sound plays either way.
-- The plugin can't tell whether a banner was actually shown. If notifications are blocked, nothing is reported; the timer works normally.
+- They come from **Focus Keys**, shown by a small helper app inside the plugin (no window, no Dock icon). To allow, block or restyle them, use **System Settings › Notifications › Focus Keys**.
+- The first notification makes macOS ask whether Focus Keys can send notifications. Allow it. That first banner may not show until you answer.
+- If you turn Focus Keys notifications off, the plugin respects that and shows nothing (the sound still plays).
+- If the helper can't run (for example it was removed or macOS blocks it), the banner comes from **Script Editor** instead, through AppleScript. Its settings are under **System Settings › Notifications › Script Editor**.
+- A Focus can hide the banner unless Focus Keys is allowed in that Focus. Notification Center may still list it. The sound plays either way.
 - The banner never adds its own sound, so you only hear the sound you chose.
 
 ## Focus switching (optional)
@@ -142,7 +143,7 @@ To reset: quit Stream Deck, delete that folder, reopen Stream Deck. All keys sta
 
 - **The key shows a picture, not a number.** It has a custom image set in the Stream Deck app. Clear it.
 - **The key flashes a warning triangle when a timer starts or stops.** A Focus shortcut couldn't run. Open the key's Property Inspector; the Focus section shows the problem.
-- **No banner appears.** Check System Settings › Notifications › Script Editor, and whether a Focus is hiding it. The sound plays regardless.
+- **No banner appears.** Check System Settings › Notifications › Focus Keys (or Script Editor, if the log says `showing the banner through Script Editor instead`), and whether a Focus is hiding it. The sound plays regardless.
 - **No sound.** Check the Sound setting isn't **None (silent)** and the Mac's volume and mute.
 - **Log warning `moved it to …state.unsupported-….json`.** The saved state couldn't be used, so it was set aside under that name and the timer started idle. Nothing else is needed; delete the backup when you like.
 - **Log error `won't be saved this run` at startup.** The state file couldn't be read and couldn't be moved aside, usually a permissions problem on the folder above. The timer works but won't survive a restart. Quit Stream Deck, make the folder writable (or move the file out), and reopen.
@@ -156,7 +157,7 @@ To reset: quit Stream Deck, delete that folder, reopen Stream Deck. All keys sta
 - No automatic work/break cycles; each key is one preset you start yourself.
 - The Neo Infobar isn't used.
 - Focus switching needs your own shortcuts, doesn't restore your previous Focus, and doesn't notice manual Focus changes.
-- Notifications appear as Script Editor's.
+- If the notification helper can't run, notifications appear as Script Editor's.
 - Nothing can play while the Mac is asleep; a missed alert plays once on wake.
 
 ## Privacy
@@ -171,4 +172,4 @@ Everything stays on your Mac. The plugin makes no internet connections and colle
 
 1. In the Stream Deck app, open Preferences (Settings in some versions) › **Plugins**, select **Focus Keys**, and uninstall it. The exact wording may vary by app version.
 2. To remove all data, delete `~/Library/Application Support/com.austinzani.focus-keys/`.
-3. Optionally delete the Focus shortcuts you made for it. Leave System Settings › Notifications › Script Editor alone unless you want it changed; other scripts share it.
+3. Optionally delete the Focus shortcuts you made for it. Focus Keys may stay listed in System Settings › Notifications until macOS tidies it up.
