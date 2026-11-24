@@ -132,7 +132,7 @@ The full list is every **owner** and **asset** row in [MARKETPLACE.md](MARKETPLA
 
 Product calls from this pass:
 
-- [ ] Notification helper (Developer ID signed and notarized) shows banners as Focus Keys after installing the package: yes/no.
+- [x] Notification helper (Developer ID signed and notarized) shows notifications as Focus Keys after installing the package: yes (2026-11-24).
 - [x] Focus recovery rule (**On end** runs once after any gap, however long): kept, no cutoff (2026-11-24).
 
 ## Results
@@ -142,8 +142,8 @@ Product calls from this pass:
 | 1. Install | Partial pass | Packaged plugin installed and connected; both actions appear. Remaining clean-setup checks are unverified. |
 | 2. Four-key timer | Partial pass | On a virtual test profile, start, pause, resume and cancel were logged; a one-minute timer completed on time. Four-key and Break checks remain. |
 | 3. Appearance | Partial | One idle preset displayed its large number on the virtual device. Font, color and physical Neo checks remain. |
-| 4. Alerts | Partial | One-minute completion logged one Glass alert and the owner heard a sound. Fixed missing executable permission in the package; the reinstalled, notarized helper successfully delivered a direct test notification to Notification Center. A timer completion with notifications enabled remains to be verified. |
-| 5a. Focus prototype | Not tested | Requires the owner to be informed before Focus changes. |
-| 5b. Plugin Focus | Not tested | |
-| 6. Recovery | Not tested | |
+| 4. Alerts | Partial pass | One-minute completion logged one Glass alert and the owner heard a sound. Fixed missing executable permission in the package; after reinstalling and enabling macOS permission, the owner confirmed a Focus Keys notification from a timer. Remaining sound, notification-setting and cancellation cases are unverified. |
+| 5a. Focus prototype | Skipped | Owner requested that Focus testing wait. |
+| 5b. Plugin Focus | Skipped | Owner requested that Focus testing wait. |
+| 6. Recovery | Not tested | Restart attempt was canceled; live recovery cases remain. |
 | 7. Uninstall | Not tested | Plugin remains installed. |
