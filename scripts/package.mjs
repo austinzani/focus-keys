@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { restoreExecutableInArchive } from "./package-permissions.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
@@ -49,6 +50,7 @@ try {
 }
 
 const file = join(outDir, `${manifest.UUID}.streamDeckPlugin`);
+restoreExecutableInArchive(file, root, `${sdPlugin}/notifier/Focus Keys.app/Contents/MacOS/focus-keys-notifier`);
 console.log(`\n${file} (${(statSync(file).size / 1024).toFixed(1)} KiB, version ${manifest.Version})`);
 if (!notarized) {
 	console.warn("WARNING: the notification helper isn't notarized. Fine on this Mac; rebuild it with --sign/--notarize before a release (scripts/build-notifier.mjs).");
