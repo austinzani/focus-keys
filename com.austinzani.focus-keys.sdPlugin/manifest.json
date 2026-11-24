@@ -1,12 +1,12 @@
 {
 	"$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
-	"Name": "Neo Pomodoro",
+	"Name": "Focus Keys",
 	"Version": "0.1.0.0",
 	"Author": "Austin Zani",
 	"Actions": [
 		{
 			"Name": "Timer Preset",
-			"UUID": "com.austinzani.neo-pomodoro.preset",
+			"UUID": "com.austinzani.focus-keys.preset",
 			"Icon": "imgs/actions/preset/icon",
 			"Tooltip": "Tap to start, pause, or resume a whole-minute countdown. Hold to cancel.",
 			"PropertyInspectorPath": "ui/preset.html",
@@ -21,7 +21,7 @@
 			]
 		}
 	],
-	"Category": "Neo Pomodoro",
+	"Category": "Focus Keys",
 	"CategoryIcon": "imgs/plugin/category-icon",
 	"CodePath": "bin/plugin.js",
 	"Description": "A calm whole-minute countdown for Stream Deck Neo keys. No seconds, just minutes and a progress ring.",
@@ -39,5 +39,5 @@
 	"Nodejs": {
 		"Version": "24"
 	},
-	"UUID": "com.austinzani.neo-pomodoro"
+	"UUID": "com.austinzani.focus-keys"
 }

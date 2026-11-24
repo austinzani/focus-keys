@@ -24,11 +24,11 @@ describe("alert preferences", () => {
 
 	it("show a notification only when enabled, independently of the sound", () => {
 		expect(planAlert(parseAlertPrefs({ sound: "none", notificationEnabled: true, notificationText: "Stretch" }), 5 * MIN)).toEqual({
-			notification: { title: "Neo Pomodoro", body: "Stretch" },
+			notification: { title: "Focus Keys", body: "Stretch" },
 		});
 		expect(planAlert(parseAlertPrefs({ sound: "ping", notificationEnabled: true, notificationText: "Stretch" }), 5 * MIN)).toEqual({
 			sound: "ping",
-			notification: { title: "Neo Pomodoro", body: "Stretch" },
+			notification: { title: "Focus Keys", body: "Stretch" },
 		});
 		for (const notificationEnabled of [false, "true", 1, undefined]) {
 			expect(planAlert(parseAlertPrefs({ notificationEnabled, notificationText: "Stretch" }), 5 * MIN).notification).toBeUndefined();

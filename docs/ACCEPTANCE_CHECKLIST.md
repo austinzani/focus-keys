@@ -4,11 +4,11 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 
 ## Before you start
 
-- Build the package: `npm run package` → `release/com.austinzani.neo-pomodoro.streamDeckPlugin`.
+- Build the package: `npm run package` → `release/com.austinzani.focus-keys.streamDeckPlugin`.
 - Use short presets (1–2 minutes) where a step waits for a finish.
 - Mac volume up, no Focus on unless a step says otherwise.
-- Installed plugin log: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.austinzani.neo-pomodoro.sdPlugin/logs/`. Look for `session {…}`, `restored session …` and `alert session=… sound=… notification=…` lines.
-- State file: `~/Library/Application Support/com.austinzani.neo-pomodoro/state.json`. Reset: quit Stream Deck, delete the folder, reopen.
+- Installed plugin log: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.austinzani.focus-keys.sdPlugin/logs/`. Look for `session {…}`, `restored session …` and `alert session=… sound=… notification=…` lines.
+- State file: `~/Library/Application Support/com.austinzani.focus-keys/state.json`. Reset: quit Stream Deck, delete the folder, reopen.
 - "One alert" means one sound and at most one banner, never two.
 
 ### Release blockers vs. notes
@@ -18,10 +18,10 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 
 ## 1. Install from the package on a clean setup
 
-- [ ] 1. Remove the dev link: `npx streamdeck unlink com.austinzani.neo-pomodoro`. In Stream Deck › Preferences › Plugins, Neo Pomodoro is gone, and `~/Library/Application Support/com.elgato.StreamDeck/Plugins/` has no `com.austinzani.neo-pomodoro.sdPlugin`.
-- [ ] 2. Optional, closer to a user's Mac: `npx streamdeck dev --disable`, and move `~/Library/Application Support/com.austinzani.neo-pomodoro/` aside for a fresh state.
-- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Neo Pomodoro** category appears with **Timer Preset**, with its icon in the action list and in Preferences › Plugins showing version 0.1.0.0.
-- [ ] 4. The installed folder's `logs/` contains a log with `Neo Pomodoro plugin connected` and no errors.
+- [ ] 1. Remove the dev link: `npx streamdeck unlink com.austinzani.focus-keys`. In Stream Deck › Preferences › Plugins, Focus Keys is gone, and `~/Library/Application Support/com.elgato.StreamDeck/Plugins/` has no `com.austinzani.focus-keys.sdPlugin`.
+- [ ] 2. Optional, closer to a user's Mac: `npx streamdeck dev --disable`, and move `~/Library/Application Support/com.austinzani.focus-keys/` aside for a fresh state.
+- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Focus Keys** category appears with **Timer Preset**, with its icon in the action list and in Preferences › Plugins showing version 0.1.0.0.
+- [ ] 4. The installed folder's `logs/` contains a log with `Focus Keys plugin connected` and no errors.
 
 ## 2. Four-key timer
 
@@ -56,7 +56,7 @@ Use a 1-minute key.
 - [ ] 3. Try at least two other sounds (Hero, Ping, Submarine, Funk, Blow, Purr, Tink). Each plays once. (`afplay /System/Library/Sounds/Hero.aiff` auditions them in Terminal.)
 - [ ] 4. **None (silent)**: a finish shows **0** with no sound.
 - [ ] 5. Another key's Property Inspector shows the same alert settings; changes apply to all keys.
-- [ ] 6. Check **Show a macOS notification**, text empty. On finish a banner from **Script Editor** reads "Neo Pomodoro / Time's up: 1-minute timer finished." Only the chosen sound plays. Note whether macOS asked permission.
+- [ ] 6. Check **Show a macOS notification**, text empty. On finish a banner from **Script Editor** reads "Focus Keys / Time's up: 1-minute timer finished." Only the chosen sound plays. Note whether macOS asked permission.
 - [ ] 7. Text `Stretch "now" — {minutes} min 🍅`: the banner shows it exactly with `{minutes}` replaced.
 - [ ] 8. Sound **None** with notification on: silent banner. A sound with notification off: sound only.
 - [ ] 9. System Settings › Notifications › Script Editor › Allow notifications off: a finish still shows **0** and plays the sound; the next timer starts normally. Turn it back on.
@@ -70,10 +70,10 @@ Use a 1-minute key.
 ### 5a. Prototype in Terminal (about 10 minutes; changes Focus on this Mac and synced devices)
 
 - [ ] 1. In Shortcuts, create:
-  - **Neo Pomodoro Test - Get Focus**: **Get Current Focus**, then **Stop and Output** the result (as text if offered).
-  - **Neo Pomodoro Test - Focus On**: **Set Focus** your work Focus **On**, until **Turned Off**.
-  - **Neo Pomodoro Test - Focus Off**: **Set Focus** **Off**.
-  - **Neo Pomodoro Test - Set Focus From Input**: receives text; **Set Focus** with Focus set to **Shortcut Input**; if input is empty, turn Focus off. If the action can't take a variable there, note it (that answers Q4 "no").
+  - **Focus Keys Test - Get Focus**: **Get Current Focus**, then **Stop and Output** the result (as text if offered).
+  - **Focus Keys Test - Focus On**: **Set Focus** your work Focus **On**, until **Turned Off**.
+  - **Focus Keys Test - Focus Off**: **Set Focus** **Off**.
+  - **Focus Keys Test - Set Focus From Input**: receives text; **Set Focus** with Focus set to **Shortcut Input**; if input is empty, turn Focus off. If the action can't take a variable there, note it (that answers Q4 "no").
 - [ ] 2. In the repo: `node scripts/focus-prototype.mjs`; follow the prompts. Results go to `focus-prototype-<time>.jsonl`.
 - [ ] 3. Record answers: Q1 is `get-current` a stable Focus name? Q2 what does "no Focus" return? Q3 do on/off exit 0 and how fast? Q4 does the `restore:` read-back match, including no Focus? Q5 are manual and scheduled changes visible by reading, and what does Focus Off do to a hand-chosen Focus? Q6 which prompts appeared? Q7 did the Script Editor banner show with the work Focus on?
 - [ ] 4. Send back the `.jsonl` file. Restore stays off unless it meets the rule in DEVELOPMENT.md.
@@ -111,8 +111,8 @@ Sound on. Focus switching on for item 11 only.
 
 ## 7. Uninstall
 
-- [ ] 1. Stream Deck › Preferences (or Settings) › Plugins › Neo Pomodoro › uninstall (wording may vary). The category and keys' action disappear; no errors in Stream Deck's log.
-- [ ] 2. Delete `~/Library/Application Support/com.austinzani.neo-pomodoro/`. Nothing else of the plugin remains apart from your shortcuts.
+- [ ] 1. Stream Deck › Preferences (or Settings) › Plugins › Focus Keys › uninstall (wording may vary). The category and keys' action disappear; no errors in Stream Deck's log.
+- [ ] 2. Delete `~/Library/Application Support/com.austinzani.focus-keys/`. Nothing else of the plugin remains apart from your shortcuts.
 - [ ] 3. Back to development: `npx streamdeck dev`, `npm run link`, `npm run restart`.
 
 ## Owner decisions to record

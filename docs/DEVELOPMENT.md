@@ -1,6 +1,6 @@
 # Development
 
-The plugin lives in `com.austinzani.neo-pomodoro.sdPlugin/`. TypeScript in `src/` is bundled by rollup into `bin/plugin.js`. It uses `@elgato/streamdeck` v3 on Node.js 24. The name and UUID are provisional; see [Renaming before first publish](#renaming-before-first-publish).
+The plugin lives in `com.austinzani.focus-keys.sdPlugin/`. TypeScript in `src/` is bundled by rollup into `bin/plugin.js`. It uses `@elgato/streamdeck` v3 on Node.js 24. The UUID is final once published; see [Renaming before first publish](#renaming-before-first-publish).
 
 User-facing behavior is described in [USER_GUIDE.md](USER_GUIDE.md). This file covers how it's built and why.
 
@@ -14,7 +14,7 @@ User-facing behavior is described in [USER_GUIDE.md](USER_GUIDE.md). This file c
 
 ```sh
 npm install
-npm run build        # bundles src/ into com.austinzani.neo-pomodoro.sdPlugin/bin/plugin.js
+npm run build        # bundles src/ into com.austinzani.focus-keys.sdPlugin/bin/plugin.js
 npx streamdeck dev   # once per machine: enables Stream Deck developer mode
 npm run link         # symlinks the .sdPlugin folder into Stream Deck's Plugins folder
 npm run restart      # reloads the plugin after each build
@@ -37,7 +37,7 @@ npm run package      # build, validate and pack (see Packaging)
 
 ## Debugging
 
-- Linked dev build logs: `com.austinzani.neo-pomodoro.sdPlugin/logs/`. Installed package logs: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.austinzani.neo-pomodoro.sdPlugin/logs/`. Stream Deck's log: `~/Library/Logs/ElgatoStreamDeck/StreamDeck.log`.
+- Linked dev build logs: `com.austinzani.focus-keys.sdPlugin/logs/`. Installed package logs: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.austinzani.focus-keys.sdPlugin/logs/`. Stream Deck's log: `~/Library/Logs/ElgatoStreamDeck/StreamDeck.log`.
 - To attach a Node debugger, temporarily add `"Debug": "enabled"` (or `"break"` to stop on the first line) under `Nodejs` in `manifest.json`, then `npm run build && npm run restart`. Stream Deck picks a port and only applies it in developer mode. Don't commit it: `npm run package` refuses to pack a manifest with `Nodejs.Debug`.
 - `npm run watch` builds with sourcemaps. A plain `npm run build` is minified by terser with no sourcemaps.
 
@@ -54,7 +54,7 @@ npm run package      # build, validate and pack (see Packaging)
 - `src/core/focus.ts`: validates Focus settings and maps session events to Focus start/end. `src/focus/dispatcher.ts` runs shortcuts in order, at most one start and one end per focus session. `src/focus/shortcuts.ts` runs and lists shortcuts with `/usr/bin/shortcuts`. `src/focus/picker.ts` fills the Property Inspector's pickers. `src/focus/status.ts` keeps the last-problem line.
 - `src/persistence/store.ts`: the state file (below).
 - `src/actions/preset-timer.ts`: the Stream Deck adapter. Forwards SDK events to the controller, paints keys with `setImage`, reads global settings.
-- `com.austinzani.neo-pomodoro.sdPlugin/ui/preset.html`: the Property Inspector. Uses [sdpi-components](https://sdpi-components.dev) v4.0.1, vendored in `ui/vendor/` so it works offline; its MIT and bundled Lit BSD-3-Clause licenses are in `ui/vendor/LICENSES.md`.
+- `com.austinzani.focus-keys.sdPlugin/ui/preset.html`: the Property Inspector. Uses [sdpi-components](https://sdpi-components.dev) v4.0.1, vendored in `ui/vendor/` so it works offline; its MIT and bundled Lit BSD-3-Clause licenses are in `ui/vendor/LICENSES.md`.
 
 ## Coordinator events
 
@@ -68,7 +68,7 @@ The session tracks an absolute wall-clock end time. Forward jumps, including sle
 
 ## Persistence
 
-State is saved to `~/Library/Application Support/com.austinzani.neo-pomodoro/state.json` on every session change and on alert delivery. It's outside the plugin folder so it survives updates, and because packaged plugin files are immutable once DRM-protected. It holds the session, the session-id counter, the last alerted session id and the Focus record (session this plugin turned Focus on for, 0 if none). It isn't kept in Stream Deck global settings, because the Property Inspector rewrites that whole object when alert or Focus settings change.
+State is saved to `~/Library/Application Support/com.austinzani.focus-keys/state.json` on every session change and on alert delivery. It's outside the plugin folder so it survives updates, and because packaged plugin files are immutable once DRM-protected. It holds the session, the session-id counter, the last alerted session id and the Focus record (session this plugin turned Focus on for, 0 if none). It isn't kept in Stream Deck global settings, because the Property Inspector rewrites that whole object when alert or Focus settings change.
 
 - Versioned (currently 1). A file this version can't use is moved to `state.unsupported-<time>.json` with a warning, and the timer starts idle. If it can't be moved, the plugin runs without saving and logs `won't be saved this run` once.
 - Atomic writes: a temporary file is flushed, then renamed. Leftover temp files are deleted at startup. A change in the same instant as quitting may be lost.
@@ -92,7 +92,7 @@ The prototype is `scripts/focus-prototype.mjs`. It changes Focus on the Mac (and
 
 ## Fonts, glyphs and icons
 
-Five OFL 1.1 fonts from Fontsource 5.3.0 (Inter Bold, Nunito ExtraBold, Oswald SemiBold, JetBrains Mono Bold, Bitter Bold). `npm run glyphs` extracts only digits 0–9 as SVG paths (about 28 KB), fails if a font isn't OFL or declares a Reserved Font Name, and copies each license plus a `NOTICE.txt` to `com.austinzani.neo-pomodoro.sdPlugin/licenses/fonts/`. No font file ships or loads at runtime.
+Five OFL 1.1 fonts from Fontsource 5.3.0 (Inter Bold, Nunito ExtraBold, Oswald SemiBold, JetBrains Mono Bold, Bitter Bold). `npm run glyphs` extracts only digits 0–9 as SVG paths (about 28 KB), fails if a font isn't OFL or declares a Reserved Font Name, and copies each license plus a `NOTICE.txt` to `com.austinzani.focus-keys.sdPlugin/licenses/fonts/`. No font file ships or loads at runtime.
 
 `npm run icons` (`scripts/generate-icons.mjs`) renders the plugin icon, category icon, action icon and default key image from the real key renderer, and writes Marketplace gallery mock renders to `release/gallery/` (git-ignored). Commit the regenerated PNGs.
 
@@ -104,9 +104,9 @@ Five OFL 1.1 fonts from Fontsource 5.3.0 (Inter Bold, Nunito ExtraBold, Oswald S
    - builds with rollup (terser, no sourcemaps);
    - runs `streamdeck pack … --output release --force --no-update-check`, which validates first and won't pack an invalid plugin;
    - restores `manifest.json` afterwards, because `pack` rewrites it in its own formatting.
-3. Output: `release/com.austinzani.neo-pomodoro.streamDeckPlugin` (about 121 KiB, 21 files; `release/` is git-ignored).
+3. Output: `release/com.austinzani.focus-keys.streamDeckPlugin` (about 121 KiB, 21 files; `release/` is git-ignored).
 
-What goes in: everything in the `.sdPlugin` folder except what `com.austinzani.neo-pomodoro.sdPlugin/.sdignore` excludes (`logs/`, `.DS_Store`, `*.map`) and the CLI defaults (`.git`, `/.env*`, `*.log`, `*.js.map`). Rollup emits `bin/THIRD_PARTY_LICENSES.txt` with the notices of the npm packages bundled into `plugin.js` (@elgato/streamdeck, @elgato/utils, @elgato/schemas, @streamdeck/core, ws, zod: MIT; tslib: 0BSD), since terser strips license comments. Font and sdpi-components licenses ship in `licenses/fonts/` and `ui/vendor/LICENSES.md`.
+What goes in: everything in the `.sdPlugin` folder except what `com.austinzani.focus-keys.sdPlugin/.sdignore` excludes (`logs/`, `.DS_Store`, `*.map`) and the CLI defaults (`.git`, `/.env*`, `*.log`, `*.js.map`). Rollup emits `bin/THIRD_PARTY_LICENSES.txt` with the notices of the npm packages bundled into `plugin.js` (@elgato/streamdeck, @elgato/utils, @elgato/schemas, @streamdeck/core, ws, zod: MIT; tslib: 0BSD), since terser strips license comments. Font and sdpi-components licenses ship in `licenses/fonts/` and `ui/vendor/LICENSES.md`.
 
 Inspect a package with `unzip -l release/*.streamDeckPlugin`. To test it, follow section 1 of the acceptance checklist (unlink the dev build first). To return to development afterwards: uninstall the packaged copy in Stream Deck, then `npx streamdeck dev`, `npm run link`, `npm run restart`.
 
@@ -118,8 +118,8 @@ The UUID must be final before the first Marketplace publish. Elgato's plugin gui
 
 | Where | What |
 | --- | --- |
-| `com.austinzani.neo-pomodoro.sdPlugin/manifest.json` | `Name`, `Category`, `UUID`, the action `UUID` (`<uuid>.preset`) |
-| `com.austinzani.neo-pomodoro.sdPlugin/` | Folder name must be `<uuid>.sdPlugin` |
+| `com.austinzani.focus-keys.sdPlugin/manifest.json` | `Name`, `Category`, `UUID`, the action `UUID` (`<uuid>.preset`) |
+| `com.austinzani.focus-keys.sdPlugin/` | Folder name must be `<uuid>.sdPlugin` |
 | `rollup.config.mjs` | `sdPlugin` constant |
 | `package-lock.json` | `name` (run `npm install` after changing `package.json`) |
 | `package.json` | `name`, and the `watch`, `validate`, `link`, `restart` scripts |
@@ -137,7 +137,7 @@ The UUID must be final before the first Marketplace publish. Elgato's plugin gui
 Then check nothing is left:
 
 ```sh
-git grep -n -i -e 'neo-pomodoro' -e 'neo pomodoro'
+git grep -n -i -e 'focus-keys' -e 'focus keys'
 ```
 
-Before testing the renamed build, unlink the old UUID (`npx streamdeck unlink com.austinzani.neo-pomodoro`) and link the new folder.
+Before testing the renamed build, unlink the old UUID (`npx streamdeck unlink com.austinzani.focus-keys`) and link the new folder.

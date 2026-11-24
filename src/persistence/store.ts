@@ -34,7 +34,7 @@ const EMPTY: PersistedState = { lastSessionId: 0, session: undefined, lastAlerte
 
 /** Where the state file lives: outside the plugin folder, so it survives plugin updates and reinstalls. */
 export function defaultStatePath(): string {
-	return join(homedir(), "Library", "Application Support", "com.austinzani.neo-pomodoro", "state.json");
+	return join(homedir(), "Library", "Application Support", "com.austinzani.focus-keys", "state.json");
 }
 
 /**

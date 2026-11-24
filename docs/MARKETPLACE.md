@@ -19,16 +19,16 @@ Status: **done**, **owner** (needs an owner decision or action), **asset** (need
 
 | Requirement | Status | Notes |
 | --- | --- | --- |
-| Packed with `streamdeck pack`; validation passes | done | `npm run package` builds, validates and packs `release/com.austinzani.neo-pomodoro.streamDeckPlugin`. |
+| Packed with `streamdeck pack`; validation passes | done | `npm run package` builds, validates and packs `release/com.austinzani.focus-keys.streamDeckPlugin`. |
 | Required manifest fields: Actions, Author, CodePath, Description, Icon, Name, OS, SDKVersion, Software.MinimumVersion, UUID, Version | done | All present. |
 | `Version` in `x.x.x.x` form | done | `0.1.0.0`; `package.json` is `0.1.0`, and `npm run package` checks they match. |
-| UUID: reverse DNS, lowercase a–z, 0–9, `-`, `.`; includes author and plugin name; action UUIDs prefixed with it | done, but provisional | `com.austinzani.neo-pomodoro`, action `com.austinzani.neo-pomodoro.preset`. **Must be final before the first publish.** Elgato's guidelines say not to change UUIDs after publishing; a new UUID is a different plugin, and keys users placed stop working. See "Renaming before first publish" in [DEVELOPMENT.md](DEVELOPMENT.md). |
-| DRM readiness: `@elgato/streamdeck` v2+, `SDKVersion` 3, `Software.MinimumVersion` ≥ 6.9, CLI ≥ 1.6, manifest never read at runtime, shipped files never modified | done | SDK 3.0.6, SDKVersion 3, minimum Stream Deck 7.1, CLI 1.10.5. The plugin doesn't read `manifest.json`. It writes only to its state folder (`~/Library/Application Support/com.austinzani.neo-pomodoro/`: `state.json`, its temporary files and any moved-aside backup) and its logs, never its shipped files. Elgato now requires DRM compatibility for new submissions and updates (seen only in a Maker Console search snippet; UNVERIFIED). |
+| UUID: reverse DNS, lowercase a–z, 0–9, `-`, `.`; includes author and plugin name; action UUIDs prefixed with it | done | `com.austinzani.focus-keys`, action `com.austinzani.focus-keys.preset`. **Must be final before the first publish.** Elgato's guidelines say not to change UUIDs after publishing; a new UUID is a different plugin, and keys users placed stop working. See "Renaming before first publish" in [DEVELOPMENT.md](DEVELOPMENT.md). |
+| DRM readiness: `@elgato/streamdeck` v2+, `SDKVersion` 3, `Software.MinimumVersion` ≥ 6.9, CLI ≥ 1.6, manifest never read at runtime, shipped files never modified | done | SDK 3.0.6, SDKVersion 3, minimum Stream Deck 7.1, CLI 1.10.5. The plugin doesn't read `manifest.json`. It writes only to its state folder (`~/Library/Application Support/com.austinzani.focus-keys/`: `state.json`, its temporary files and any moved-aside backup) and its logs, never its shipped files. Elgato now requires DRM compatibility for new submissions and updates (seen only in a Maker Console search snippet; UNVERIFIED). |
 | No debug settings in the release manifest | done | `Nodejs.Debug` removed; `npm run package` refuses to pack if it's back. Whether Elgato blocks it is undocumented. |
 | No dev files in the package | done | `.sdignore` excludes `logs/`, `.DS_Store`, `*.map`; CLI defaults exclude `.git`, `/.env*`, `*.log`, `*.js.map`. Package has 21 files, about 121 KiB. |
 | Third-party licenses ship with the plugin | done | `licenses/fonts/` (5 × SIL OFL 1.1 + NOTICE), `ui/vendor/LICENSES.md` (sdpi-components MIT, Lit BSD-3-Clause), `bin/THIRD_PARTY_LICENSES.txt` (bundled npm code: @elgato/streamdeck, @elgato/utils, @elgato/schemas, @streamdeck/core, ws, zod: MIT; tslib: 0BSD). |
 | `OS` declares only supported platforms | done | `mac`, minimum 12. Reviewers check device and OS claims. |
-| Category and action names ≤ ~30 characters, category same as or close to plugin name, tooltips set | done | Category "Neo Pomodoro", action "Timer Preset", tooltip set. Changes with the name. |
+| Category and action names ≤ ~30 characters, category same as or close to plugin name, tooltips set | done | Category "Focus Keys", action "Timer Preset", tooltip set. |
 | Optional `URL` / `SupportURL` in manifest | owner | Not set. Add once a support page exists (`SupportURL` needs Stream Deck 6.9+). |
 | Guideline: offer 2 to 30 actions | owner (risk) | The plugin has **one** configurable action, used on four keys. Guidelines prefer consolidated, configurable actions, which this is, but a reviewer could flag the count. Options: submit as is and explain in the review notes, or split out a second action later. |
 | Use `showAlert` when an action fails | partial | Shown when a Focus shortcut fails. A failed sound or notification (`afplay`/`osascript`) is only logged; the timer itself has no failure case. |
@@ -54,7 +54,7 @@ All plugin images and drafts come from `npm run icons` (`scripts/generate-icons.
 | --- | --- | --- |
 | Maker Console organization and signed Maker Agreement (org Settings) | owner | Create at https://maker.elgato.com. Free products need no Stripe setup; paid ones use Stripe Connect with a 70/30 split. Identity verification steps: UNVERIFIED. |
 | Public identity | owner | The manifest `Author` ("Austin Zani") appears on the product page, and the org gets a public page at `marketplace.elgato.com/@<handle>`. Guidelines allow a real name, an alias or an org name; use the org name if you create one. |
-| Name: unique, ≤ ~30 characters, English, no trademarks, no promo words, no emoji | owner | See "Name" below. **Name and monetization are locked once the product is created**; changing them later means emailing maker@elgato.com. |
+| Name: unique, ≤ ~30 characters, English, no trademarks, no promo words, no emoji | done (owner: formal trademark check) | Focus Keys. See "Name" below. **Name and monetization are locked once the product is created**; changing them later means emailing maker@elgato.com. |
 | Description: 250 to 1,500 characters; the first 250 plain text saying what it does and for whom; English; no keyword stuffing | done (draft) | See "Listing copy". |
 | Tags and type (category) | owner | Set in Maker Console › Details. Suggested below. |
 | Release notes for every version | done (draft) | See below. |
@@ -66,25 +66,15 @@ All plugin images and drafts come from `npm run icons` (`scripts/generate-icons.
 
 ## Name
 
-"Pomodoro" is claimed as a trademark: Cirillo's trademark guidelines say "Pomodoro®" is a registered trademark of Francesco Cirillo, protected by his company Cirillo Consulting GmbH, and that using it needs explicit permission (https://www.pomodorotechnique.com/pomodoro-trademark-guidelines.php). Elgato's guidelines say product names must not infringe trademarks (https://docs.elgato.com/guidelines/products) and plugin names must not infringe copyright or trademarks (https://docs.elgato.com/guidelines/stream-deck/plugins). Trademark registration varies by country and by class of goods, and the guidelines page names no jurisdictions. This is a desk check, not legal clearance. "Neo" also echoes Elgato's own product name. The provisional **Neo Pomodoro** should be replaced before the first publish. The listing copy below avoids both.
+**Focus Keys** (`com.austinzani.focus-keys`), chosen by the owner on 2026-11-24.
 
-Existing Marketplace timers to stay clear of include Focus, Productivity Timer, PandaBreak, Tomatick, Tomato Timer, FocusTimer Pro, Timebox & Track, Tickwork, Stream Countdown Timer, Flip Clock Pro, Countdown Keys and Timer (17labs).
+Why not the earlier names: "Pomodoro®" is a registered trademark of Francesco Cirillo, and using it needs permission (https://www.pomodorotechnique.com/pomodoro-trademark-guidelines.php). Elgato's guidelines forbid trademarks in product and plugin names (https://docs.elgato.com/guidelines/products, https://docs.elgato.com/guidelines/stream-deck/plugins). "Neo" echoes Elgato's own product name. A plain "Focus Timer" collides with BarRaider's Stream Countdown Timer "Focus Timer" mode and with FocusTimer Pro.
 
-Candidates (web and Marketplace search only; no formal trademark search done):
-
-| Name | Search result | Suggested UUID |
-| --- | --- | --- |
-| Hourmark | No Marketplace or web conflicts found | `com.austinzani.hourmark` |
-| Sessionwise | No Marketplace or web conflicts found | `com.austinzani.sessionwise` |
-| Minute Ring | Not yet searched (owner: check before choosing); describes the look | `com.austinzani.minute-ring` |
-| Quiet Minutes | Not yet searched (owner: check before choosing); describes the tone | `com.austinzani.quiet-minutes` |
-| Keystone Focus | No Marketplace hits; "Keystone" is a common trademark word | `com.austinzani.keystone-focus` |
-
-Rejected: Tomato Keys (too close to Tomato Timer, Tomatick, Countdown Keys), Focus Ring Timer and Ring Timer (existing apps), Tally Timer (Marketplace "Tally" plugin), Deep Work Keys ("Deep Work" is a book title and an existing preset name). Check the final pick on https://marketplace.elgato.com/stream-deck/plugins and a trademark database before creating the product.
+Desk check of "Focus Keys" on 2026-11-24: a web search found no Stream Deck plugin with that name. Nearby Marketplace names: Focus, FocusTimer Pro and Countdown Keys. This was a web search only, not a formal trademark search. Before creating the product, search https://marketplace.elgato.com/stream-deck/plugins and a trademark database (for example USPTO, class 9) for "Focus Keys".
 
 ## Listing copy (draft)
 
-Written with the placeholder **[Name]**. Claims are limited to behavior in the code and the user guide; Focus restore and notification attribution are stated as limits, not features. Recovery after sleep, restart and reconnect is implemented and unit-tested but not yet checked on the device: keep those lines only if the acceptance pass confirms them.
+Claims are limited to behavior in the code and the user guide; Focus restore and notification attribution are stated as limits, not features. Recovery after sleep, restart and reconnect is implemented and unit-tested but not yet checked on the device: keep those lines only if the acceptance pass confirms them.
 
 **Short description (manifest `Description`, under 250 characters):**
 
@@ -92,7 +82,7 @@ Written with the placeholder **[Name]**. Claims are limited to behavior in the c
 
 **Long description (about 1,200 characters):**
 
-> [Name] turns Stream Deck keys into a quiet whole-minute timer for focused work on a Mac. Put one key per preset on your Stream Deck Neo and start a session with one tap.
+> Focus Keys turns Stream Deck keys into a quiet whole-minute timer for focused work on a Mac. Put one key per preset on your Stream Deck Neo and start a session with one tap.
 >
 > Each key shows its minutes in large type. While a session runs, a ring around the number shrinks as time passes; there are no seconds to watch. Tap the running key to pause or resume, hold it to cancel, or tap another key to switch presets. One session runs at a time.
 >

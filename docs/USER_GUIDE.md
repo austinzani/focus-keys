@@ -1,8 +1,6 @@
-# Neo Pomodoro user guide
+# Focus Keys user guide
 
-Neo Pomodoro turns Stream Deck keys into whole-minute countdown timers. Each key is one preset (for example 5, 15, 25 or 50 minutes). All keys share one timer: starting one key replaces whatever another key was running. The key shows the minutes left and a ring for the remaining fraction. It never shows seconds.
-
-The name "Neo Pomodoro" is provisional.
+Focus Keys turns Stream Deck keys into whole-minute countdown timers. Each key is one preset (for example 5, 15, 25 or 50 minutes). All keys share one timer: starting one key replaces whatever another key was running. The key shows the minutes left and a ring for the remaining fraction. It never shows seconds.
 
 ## Requirements
 
@@ -12,9 +10,9 @@ The name "Neo Pomodoro" is provisional.
 
 ## Install
 
-1. Double-click `com.austinzani.neo-pomodoro.streamDeckPlugin`.
+1. Double-click `com.austinzani.focus-keys.streamDeckPlugin`.
 2. Stream Deck asks whether to install the plugin. Confirm.
-3. The **Neo Pomodoro** category appears in the Stream Deck app's action list, with one action, **Timer Preset**.
+3. The **Focus Keys** category appears in the Stream Deck app's action list, with one action, **Timer Preset**.
 
 Updating works the same way: double-click the newer file. Keys and their settings belong to your Stream Deck profile, and the timer's state is stored outside the plugin folder, so both should carry over.
 
@@ -71,14 +69,14 @@ The **Alerts — shared by all timer keys** section at the bottom of every timer
 | Setting | Default | Notes |
 | --- | --- | --- |
 | Sound | Glass | Glass, Hero, Ping, Submarine, Funk, Blow, Purr, Tink, or **None (silent)**. These are the Mac's built-in sounds, played once. |
-| Notification | Off | **Show a macOS notification**: a banner titled "Neo Pomodoro". |
+| Notification | Off | **Show a macOS notification**: a banner titled "Focus Keys". |
 | Text | `Time's up: {minutes}-minute timer finished.` | Used when the field is empty. `{minutes}` becomes the timer's length. Up to 200 characters. |
 
 The sound follows your Mac's output volume and mute. It doesn't depend on notification permission or Focus.
 
 About notifications:
 
-- macOS shows them as coming from **Script Editor**, not from Stream Deck or Neo Pomodoro, because the plugin uses AppleScript's `display notification`. To allow, block or restyle them, use **System Settings › Notifications › Script Editor**. That setting also covers any other script that uses `display notification`.
+- macOS shows them as coming from **Script Editor**, not from Stream Deck or Focus Keys, because the plugin uses AppleScript's `display notification`. To allow, block or restyle them, use **System Settings › Notifications › Script Editor**. That setting also covers any other script that uses `display notification`.
 - The first notification may make macOS ask whether Script Editor can send notifications. Allow it.
 - A Focus can hide the banner unless Script Editor is allowed in that Focus. Notification Center may still list it. The sound plays either way.
 - The plugin can't tell whether a banner was actually shown. If notifications are blocked, nothing is reported; the timer works normally.
@@ -86,12 +84,12 @@ About notifications:
 
 ## Focus switching (optional)
 
-Off by default. macOS doesn't let plugins set Focus directly, so Neo Pomodoro runs shortcuts that you make in the Shortcuts app. Your shortcut does the switching with the **Set Focus** action.
+Off by default. macOS doesn't let plugins set Focus directly, so Focus Keys runs shortcuts that you make in the Shortcuts app. Your shortcut does the switching with the **Set Focus** action.
 
 ### Setup
 
-1. In the Shortcuts app, make a shortcut (for example "Pomodoro Focus On") with one **Set Focus** action that turns your work Focus **On**, until **Turned Off**.
-2. Optionally make a second shortcut (for example "Pomodoro Focus Off") with **Set Focus** turning Focus **Off**.
+1. In the Shortcuts app, make a shortcut (for example "Work Focus On") with one **Set Focus** action that turns your work Focus **On**, until **Turned Off**.
+2. Optionally make a second shortcut (for example "Work Focus Off") with **Set Focus** turning Focus **Off**.
 3. Open any timer key's Property Inspector. In **Focus — shared by all timer keys**, check **Switch Focus with the timer**. Under **On start** pick the first shortcut. Under **On end** pick the second, or **Leave Focus as it is**. Use the refresh button if a new shortcut isn't listed. A chosen shortcut that was renamed or deleted shows "(not found)".
 4. The first run may ask for permission, for example to let Shortcuts change Focus or to let Stream Deck run shortcuts. Allow it. Until then the shortcut fails and the key shows a brief alert triangle.
 
@@ -118,7 +116,7 @@ Shortcuts run in the background, one at a time, and never delay the countdown. A
 - Unchecking switching during a timer means **On end** won't run for it.
 - A shortcut whose name starts or ends with spaces can't be chosen; rename it.
 
-When a shortcut can't run (missing or renamed, an error inside it, permission denied, 30-second timeout), the timer carries on, the timer's key shows Stream Deck's alert triangle briefly, and the Focus section of the Property Inspector shows the latest problem, such as `No shortcut named "Pomodoro Focus On" in the Shortcuts app`, until a shortcut next runs successfully or you change the Focus settings. On a Mac set to a language other than English, a missing shortcut may be reported with the `shortcuts` command's own error text instead.
+When a shortcut can't run (missing or renamed, an error inside it, permission denied, 30-second timeout), the timer carries on, the timer's key shows Stream Deck's alert triangle briefly, and the Focus section of the Property Inspector shows the latest problem, such as `No shortcut named "Work Focus On" in the Shortcuts app`, until a shortcut next runs successfully or you change the Focus settings. On a Mac set to a language other than English, a missing shortcut may be reported with the `shortcuts` command's own error text instead.
 
 ## Sleep, restart and reconnecting
 
@@ -134,7 +132,7 @@ The timer counts real time, so time the Mac spends asleep or Stream Deck spends 
 
 ## Saved state
 
-The plugin saves the current timer to `~/Library/Application Support/com.austinzani.neo-pomodoro/state.json`. It holds only the current timer (which key, its length, its end time or time left), the last timer id, which timer last alerted, and which timer turned Focus on. Key durations, colors, fonts and the alert and Focus settings are stored by Stream Deck with your profile.
+The plugin saves the current timer to `~/Library/Application Support/com.austinzani.focus-keys/state.json`. It holds only the current timer (which key, its length, its end time or time left), the last timer id, which timer last alerted, and which timer turned Focus on. Key durations, colors, fonts and the alert and Focus settings are stored by Stream Deck with your profile.
 
 To reset: quit Stream Deck, delete that folder, reopen Stream Deck. All keys start idle.
 
@@ -146,7 +144,7 @@ To reset: quit Stream Deck, delete that folder, reopen Stream Deck. All keys sta
 - **No sound.** Check the Sound setting isn't **None (silent)** and the Mac's volume and mute.
 - **Log warning `moved it to …state.unsupported-….json`.** The saved state couldn't be used, so it was set aside under that name and the timer started idle. Nothing else is needed; delete the backup when you like.
 - **Log error `won't be saved this run` at startup.** The state file couldn't be read and couldn't be moved aside, usually a permissions problem on the folder above. The timer works but won't survive a restart. Quit Stream Deck, make the folder writable (or move the file out), and reopen.
-- **Logs** are in `~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.austinzani.neo-pomodoro.sdPlugin/logs/`. Stream Deck's own log is `~/Library/Logs/ElgatoStreamDeck/StreamDeck.log`.
+- **Logs** are in `~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.austinzani.focus-keys.sdPlugin/logs/`. Stream Deck's own log is `~/Library/Logs/ElgatoStreamDeck/StreamDeck.log`.
 
 ## Limitations
 
@@ -169,6 +167,6 @@ Everything stays on your Mac. The plugin makes no internet connections and colle
 
 ## Uninstall
 
-1. In the Stream Deck app, open Preferences (Settings in some versions) › **Plugins**, select **Neo Pomodoro**, and uninstall it. The exact wording may vary by app version.
-2. To remove all data, delete `~/Library/Application Support/com.austinzani.neo-pomodoro/`.
+1. In the Stream Deck app, open Preferences (Settings in some versions) › **Plugins**, select **Focus Keys**, and uninstall it. The exact wording may vary by app version.
+2. To remove all data, delete `~/Library/Application Support/com.austinzani.focus-keys/`.
 3. Optionally delete the Focus shortcuts you made for it. Leave System Settings › Notifications › Script Editor alone unless you want it changed; other scripts share it.

@@ -14,7 +14,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { createServer } from "vite";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const imgs = join(root, "com.austinzani.neo-pomodoro.sdPlugin", "imgs");
+const imgs = join(root, "com.austinzani.focus-keys.sdPlugin", "imgs");
 const galleryDir = join(root, "release", "gallery");
 /** Marketplace thumbnail and gallery image size, px (docs.elgato.com/guidelines/products). */
 const GALLERY = { width: 1920, height: 960 };

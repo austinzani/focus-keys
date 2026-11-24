@@ -112,7 +112,7 @@ describe("preset controller", () => {
 		expect(t.alerts.played).toEqual([]);
 		await vi.advanceTimersByTimeAsync(5 * MIN + 50);
 		expect(t.alerts.played).toEqual(["glass"]);
-		expect(t.alerts.notified).toEqual([{ title: "Neo Pomodoro", body: "Time's up: 15-minute timer finished." }]);
+		expect(t.alerts.notified).toEqual([{ title: "Focus Keys", body: "Time's up: 15-minute timer finished." }]);
 	});
 
 	it("keeps counting and showing 0 when the notification fails", async () => {

@@ -161,7 +161,7 @@ describe("state file", () => {
 	afterEach(() => dir !== undefined && rmSync(dir, { recursive: true, force: true }));
 
 	it("reads nothing before the first write, then replaces the file whole, creating its folder", async () => {
-		dir = mkdtempSync(join(tmpdir(), "neo-pomodoro-"));
+		dir = mkdtempSync(join(tmpdir(), "focus-keys-"));
 		const path = join(dir, "Application Support", "state.json");
 		const file = fileStorage(path);
 		expect(await file.read()).toBeUndefined();
@@ -174,12 +174,12 @@ describe("state file", () => {
 	});
 
 	it("reports a read error other than a missing file", async () => {
-		dir = mkdtempSync(join(tmpdir(), "neo-pomodoro-"));
+		dir = mkdtempSync(join(tmpdir(), "focus-keys-"));
 		await expect(fileStorage(dir).read()).rejects.toThrow(); // the path is a folder: EISDIR
 	});
 
 	it("moves the file aside next to it, under a new name each time", async () => {
-		dir = mkdtempSync(join(tmpdir(), "neo-pomodoro-"));
+		dir = mkdtempSync(join(tmpdir(), "focus-keys-"));
 		const path = join(dir, "state.json");
 		const file = fileStorage(path);
 		writeFileSync(path, "v2");
@@ -194,7 +194,7 @@ describe("state file", () => {
 	});
 
 	it("moves aside a path it can't read as a file", async () => {
-		dir = mkdtempSync(join(tmpdir(), "neo-pomodoro-"));
+		dir = mkdtempSync(join(tmpdir(), "focus-keys-"));
 		const path = join(dir, "state.json");
 		mkdirSync(path);
 		const l = log();
@@ -205,7 +205,7 @@ describe("state file", () => {
 	});
 
 	it("stays read-only when the folder won't let the file be moved", async () => {
-		dir = mkdtempSync(join(tmpdir(), "neo-pomodoro-"));
+		dir = mkdtempSync(join(tmpdir(), "focus-keys-"));
 		const path = join(dir, "state.json");
 		writeFileSync(path, JSON.stringify({ version: 2 }));
 		chmodSync(dir, 0o500);
@@ -219,7 +219,7 @@ describe("state file", () => {
 	});
 
 	it("removes temporary files left by an interrupted write when it reads", async () => {
-		dir = mkdtempSync(join(tmpdir(), "neo-pomodoro-"));
+		dir = mkdtempSync(join(tmpdir(), "focus-keys-"));
 		const path = join(dir, "state.json");
 		writeFileSync(path, "{}");
 		writeFileSync(`${path}.0b8f-dead.tmp`, "half");

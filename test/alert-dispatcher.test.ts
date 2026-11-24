@@ -42,7 +42,7 @@ describe("alert dispatcher", () => {
 		const t = fakeAlertPorts({ sound: "ping", notificationEnabled: true, notificationText: "Break: {minutes} min done" });
 		await t.dispatcher.handle([completed(1, 25)]);
 		expect(t.played).toEqual(["ping"]);
-		expect(t.notified).toEqual([{ title: "Neo Pomodoro", body: "Break: 25 min done" }]);
+		expect(t.notified).toEqual([{ title: "Focus Keys", body: "Break: 25 min done" }]);
 	});
 
 	it("stays silent but still notifies when silence is selected", async () => {

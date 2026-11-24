@@ -14,8 +14,8 @@ async function main(): Promise<void> {
 	const timer = new PresetTimerAction(store);
 	streamDeck.actions.registerAction(timer);
 	await streamDeck.connect();
-	streamDeck.logger.info("Neo Pomodoro plugin connected");
+	streamDeck.logger.info("Focus Keys plugin connected");
 	timer.recover();
 }
 
-main().catch((err: unknown) => streamDeck.logger.error("Neo Pomodoro plugin failed to start", err));
+main().catch((err: unknown) => streamDeck.logger.error("Focus Keys plugin failed to start", err));

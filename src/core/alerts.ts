@@ -19,7 +19,7 @@ export type AlertPlan = { sound?: SoundId; notification?: { title: string; body:
 export const DEFAULT_SOUND: SoundId = "glass";
 /** `{minutes}` is replaced with the finished session's length in whole minutes. */
 export const DEFAULT_NOTIFICATION_TEXT = "Time's up: {minutes}-minute timer finished.";
-export const NOTIFICATION_TITLE = "Neo Pomodoro";
+export const NOTIFICATION_TITLE = "Focus Keys";
 /** Longer text is cut (in characters); macOS truncates long banners anyway. */
 export const MAX_NOTIFICATION_TEXT = 200;
 

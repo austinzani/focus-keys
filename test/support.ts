@@ -7,7 +7,7 @@ import type { StateStorage } from "../src/persistence/store";
 
 /** The Property Inspector (PI) page's HTML source. */
 export function piSource(): string {
-	return readFileSync(new URL("../com.austinzani.neo-pomodoro.sdPlugin/ui/preset.html", import.meta.url), "utf8");
+	return readFileSync(new URL("../com.austinzani.focus-keys.sdPlugin/ui/preset.html", import.meta.url), "utf8");
 }
 
 /** The `<option>` values of the Property Inspector select bound to `setting`. */

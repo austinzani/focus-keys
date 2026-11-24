@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-const sdPlugin = "com.austinzani.neo-pomodoro.sdPlugin";
+const sdPlugin = "com.austinzani.focus-keys.sdPlugin";
 const manifestPath = join(root, sdPlugin, "manifest.json");
 const manifestText = readFileSync(manifestPath, "utf8");
 const manifest = JSON.parse(manifestText);

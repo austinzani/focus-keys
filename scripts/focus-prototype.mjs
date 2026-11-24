@@ -17,10 +17,10 @@ import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
 
 const NAMES = {
-	get: "Neo Pomodoro Test - Get Focus",
-	on: "Neo Pomodoro Test - Focus On",
-	off: "Neo Pomodoro Test - Focus Off",
-	setFromInput: "Neo Pomodoro Test - Set Focus From Input",
+	get: "Focus Keys Test - Get Focus",
+	on: "Focus Keys Test - Focus On",
+	off: "Focus Keys Test - Focus Off",
+	setFromInput: "Focus Keys Test - Set Focus From Input",
 };
 const out = process.argv[2] ?? `focus-prototype-${new Date().toISOString().replaceAll(":", "-")}.jsonl`;
 const scratch = mkdtempSync(join(tmpdir(), "neo-focus-"));
@@ -102,13 +102,13 @@ if (answer.toLowerCase() !== "skip") {
 // Q7: does a Focus hide the plugin's completion banner (Script Editor via osascript)?
 await run("banner: focus-on", NAMES.on);
 await new Promise((resolve) =>
-	execFile("/usr/bin/osascript", ["-e", 'display notification "Focus banner test" with title "Neo Pomodoro"'], { timeout: 10_000 }, (err, stdout, stderr) => {
+	execFile("/usr/bin/osascript", ["-e", 'display notification "Focus banner test" with title "Focus Keys"'], { timeout: 10_000 }, (err, stdout, stderr) => {
 		record({ step: "banner: osascript", exit: err ? (err.killed ? "timeout" : err.code) : 0, stdout, stderr });
 		if (err) console.log(`  banner: osascript failed: ${err.message}`);
 		resolve();
 	}),
 );
-await ask("With the work Focus on, did a 'Neo Pomodoro — Focus banner test' banner appear? (Script Editor allowed in that Focus?)");
+await ask("With the work Focus on, did a 'Focus Keys — Focus banner test' banner appear? (Script Editor allowed in that Focus?)");
 await run("banner: focus-off", NAMES.off);
 
 await ask("Is 'Share across devices' on in System Settings › Focus? Did your iPhone follow these changes?");

@@ -28,11 +28,11 @@ describe("macOS notifier", () => {
 	it("passes the text as arguments, never as script source, and requests no notification sound", async () => {
 		const { calls, run } = recordingRun();
 		const text = `-x "quoted" \\ $(id) \`id\` end tell\nline 2 🍅`;
-		await new OsascriptNotifier(run).notify("Neo Pomodoro", text);
+		await new OsascriptNotifier(run).notify("Focus Keys", text);
 
 		const [{ file, args }] = calls;
 		expect(file).toBe("/usr/bin/osascript");
-		expect(args.slice(-3)).toEqual(["--", text, "Neo Pomodoro"]);
+		expect(args.slice(-3)).toEqual(["--", text, "Focus Keys"]);
 		const script = args.slice(0, -3).join("\n");
 		expect(script).not.toContain(text);
 		expect(script).not.toContain("sound name");

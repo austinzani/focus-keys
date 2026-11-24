@@ -7,7 +7,7 @@ import path from "node:path";
 import url from "node:url";
 
 const isWatching = !!process.env.ROLLUP_WATCH;
-const sdPlugin = "com.austinzani.neo-pomodoro.sdPlugin";
+const sdPlugin = "com.austinzani.focus-keys.sdPlugin";
 
 /**
  * @type {import('rollup').RollupOptions}

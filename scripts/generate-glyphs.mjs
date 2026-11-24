@@ -18,7 +18,7 @@ const FONTS = [
 	{ id: "bitter", name: "Bitter", pkg: "bitter", weight: 700, upstream: "solmatas/BitterPro" },
 ];
 
-const licenseDir = join(root, "com.austinzani.neo-pomodoro.sdPlugin", "licenses", "fonts");
+const licenseDir = join(root, "com.austinzani.focus-keys.sdPlugin", "licenses", "fonts");
 mkdirSync(licenseDir, { recursive: true });
 
 const r = (n) => Math.round(n);

@@ -24,7 +24,7 @@ import type { StateStore } from "../persistence/store";
 import { keyImageDataUrl } from "../render/key-image";
 import { PresetController } from "./preset-controller";
 
-export const PRESET_ACTION_UUID = "com.austinzani.neo-pomodoro.preset";
+export const PRESET_ACTION_UUID = "com.austinzani.focus-keys.preset";
 
 /**
  * Thin Stream Deck adapter: forwards key and settings events to the PresetController and paints its
