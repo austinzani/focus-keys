@@ -149,58 +149,61 @@ export class TimerKeys {
 
 	/**
 	 * Writes what the key actually uses back to its settings when the stored value is missing or unusable,
-	 * so a new key's fields show it (5 minutes, the kind's default color) and a bad duration entry doesn't
-	 * turn into 5 after a restart.
+	 * so a new key's fields show it and a bad duration entry doesn't turn into 5 after a restart. A Break key
+	 * also gets its teal default color written, because the shared Property Inspector's color default is the
+	 * preset's; preset keys are left alone, so DEFAULT_COLOR still reaches keys that never chose one.
 	 */
 	#saveEffectiveSettings(key: SettingsTarget, settings: PresetSettings, kind: TimerKind): void {
 		const fill: PresetSettings = {};
 		if (parseDuration(settings.durationMinutes) === undefined) fill.durationMinutes = String(this.#controller.presetMinutes(key.id));
-		if (typeof settings.color !== "string") fill.color = defaultColorFor(kind);
+		if (kind === "break" && typeof settings.color !== "string") fill.color = defaultColorFor(kind);
 		if (Object.keys(fill).length === 0) return;
 		key.setSettings({ ...settings, ...fill }).catch((err: unknown) => streamDeck.logger.error("setSettings failed", err));
 	}
 }
 
 /** Forwards one action's key and settings events to the shared TimerKeys, tagged with the action's kind. */
-abstract class TimerAction extends SingletonAction<PresetSettings> {
-	constructor(
-		private readonly timer: TimerKeys,
-		private readonly kind: TimerKind,
-	) {
+class TimerAction extends SingletonAction<PresetSettings> {
+	readonly #timer: TimerKeys;
+	readonly #kind: TimerKind;
+
+	constructor(timer: TimerKeys, kind: TimerKind) {
 		super();
+		this.#timer = timer;
+		this.#kind = kind;
 	}
 
 	override onWillAppear(ev: WillAppearEvent<PresetSettings>): void {
-		if (ev.action.isKey()) this.timer.appeared(ev.action, ev.payload.settings, this.kind);
+		if (ev.action.isKey()) this.#timer.appeared(ev.action, ev.payload.settings, this.#kind);
 	}
 
 	override onWillDisappear(ev: WillDisappearEvent<PresetSettings>): void {
-		this.timer.disappeared(ev.action.id);
+		this.#timer.disappeared(ev.action.id);
 	}
 
 	/** Fired when the Property Inspector saves this key's settings. */
 	override onDidReceiveSettings(ev: DidReceiveSettingsEvent<PresetSettings>): void {
-		this.timer.settingsChanged(ev.action.id, ev.payload.settings);
+		this.#timer.settingsChanged(ev.action.id, ev.payload.settings);
 	}
 
 	override onPropertyInspectorDidDisappear(ev: PropertyInspectorDidDisappearEvent<PresetSettings>): void {
-		if (ev.action.isKey()) this.timer.inspectorClosed(ev.action, this.kind);
+		if (ev.action.isKey()) this.#timer.inspectorClosed(ev.action, this.#kind);
 	}
 
 	override onPropertyInspectorDidAppear(_ev: PropertyInspectorDidAppearEvent<PresetSettings>): void {
-		this.timer.inspectorOpened();
+		this.#timer.inspectorOpened();
 	}
 
 	override onSendToPlugin(ev: SendToPluginEvent<{ event: string }, PresetSettings>): Promise<void> {
-		return this.timer.messageFromInspector(ev.payload);
+		return this.#timer.messageFromInspector(ev.payload);
 	}
 
 	override onKeyDown(ev: KeyDownEvent<PresetSettings>): void {
-		this.timer.keyDown(ev.action.id);
+		this.#timer.keyDown(ev.action.id);
 	}
 
 	override onKeyUp(ev: KeyUpEvent<PresetSettings>): void {
-		this.timer.keyUp(ev.action.id);
+		this.#timer.keyUp(ev.action.id);
 	}
 }
 

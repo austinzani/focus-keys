@@ -99,6 +99,32 @@ describe("break keys", () => {
 		expect(t.ranShortcuts).toEqual(["Work Focus", "Focus Off", "Work Focus"]);
 	});
 
+	it("cancel as breaks when held, without touching Focus", async () => {
+		const t = await boot(memoryStorage().storage);
+		t.controller.keyAppeared("brk", { durationMinutes: 5 }, "break");
+		t.tap("brk");
+		t.controller.keyDown("brk");
+		await vi.advanceTimersByTimeAsync(700);
+		t.controller.keyUp("brk");
+		expect(t.events.at(-1)).toMatchObject({ type: "cancelled", kind: "break" });
+		expect(t.painted.get("brk")).toMatchObject({ state: "idle", minutes: 5 });
+		expect(t.ranShortcuts).toEqual([]);
+	});
+
+	it("run no shortcut after a restart when Focus wasn't left on", async () => {
+		const mem = memoryStorage();
+		const first = await boot(mem.storage);
+		first.controller.keyAppeared("brk", { durationMinutes: 5 }, "break");
+		first.tap("brk");
+		first.controller.stop();
+		await vi.advanceTimersByTimeAsync(0); // let the save land
+		const second = await boot(mem.storage);
+		second.controller.recover();
+		await vi.advanceTimersByTimeAsync(5 * MIN + 50);
+		expect(second.ranShortcuts).toEqual([]);
+		expect(second.alerts.played).toEqual(["glass"]);
+	});
+
 	it("leave Focus alone when they replace paused work (Focus already ended on pause)", async () => {
 		const t = await boot(memoryStorage().storage);
 		t.controller.keyAppeared("work", { durationMinutes: 25 });

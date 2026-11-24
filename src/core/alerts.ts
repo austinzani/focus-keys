@@ -1,3 +1,5 @@
+import type { TimerKind } from "./coordinator";
+
 /**
  * Completion alert preferences, shared by every timer key (Stream Deck plugin global settings), and the
  * decision of what to do when a session completes. No SDK or OS imports; adapters play and notify.
@@ -37,7 +39,7 @@ export function parseAlertPrefs(settings: AlertSettings | undefined): AlertPrefs
 }
 
 /** Sound and notification are independent: either, both or neither. A break with the default text gets the break text. */
-export function planAlert(prefs: AlertPrefs, durationMs: number, kind: "focus" | "break" = "focus"): AlertPlan {
+export function planAlert(prefs: AlertPrefs, durationMs: number, kind: TimerKind = "focus"): AlertPlan {
 	const plan: AlertPlan = {};
 	if (prefs.sound !== "none") plan.sound = prefs.sound;
 	if (prefs.notificationEnabled) {
