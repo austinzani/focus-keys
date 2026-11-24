@@ -10,46 +10,59 @@ import streamDeck, {
 	type WillDisappearEvent,
 } from "@elgato/streamdeck";
 
+import { AlertDispatcher } from "../alerts/dispatcher";
+import { AfplaySoundPlayer, OsascriptNotifier } from "../alerts/macos";
 import { systemClock } from "../core/clock";
-import { type Output, parseDuration, type PresetSettings, TimerCoordinator } from "../core/coordinator";
+import { parseDuration, type PresetSettings } from "../core/coordinator";
 import { keyImageDataUrl } from "../render/key-image";
-import { WakeTimer } from "./wake-timer";
+import { PresetController } from "./preset-controller";
 
 export const PRESET_ACTION_UUID = "com.austinzani.neo-pomodoro.preset";
 
 /**
- * Thin Stream Deck adapter: forwards key and settings events to the coordinator, paints its renders with
- * setImage, and wakes at the moment the coordinator says something next changes (a countdown step or a
- * hold reaching its threshold). Each key's duration is an action setting the SDK persists across restarts.
+ * Thin Stream Deck adapter: forwards key and settings events to the PresetController and paints its
+ * renders with setImage. Each key's duration, color and font are action settings the SDK persists; the
+ * completion alert preferences are plugin global settings shared by every key, read when a session completes.
  */
 @action({ UUID: PRESET_ACTION_UUID })
 export class PresetTimerAction extends SingletonAction<PresetSettings> {
-	readonly #coordinator = new TimerCoordinator(systemClock);
 	readonly #keys = new Map<string, KeyAction<PresetSettings>>();
-	// The wake stays scheduled even with no visible keys, so completion is still processed on time.
-	readonly #wake = new WakeTimer(systemClock, () => this.#apply(this.#coordinator.tick()));
+	readonly #controller = new PresetController({
+		clock: systemClock,
+		paint: (render) => {
+			const key = this.#keys.get(render.keyId);
+			key?.setImage(keyImageDataUrl(render)).catch((err: unknown) => streamDeck.logger.error("setImage failed", err));
+		},
+		alerts: new AlertDispatcher({
+			loadSettings: () => streamDeck.settings.getGlobalSettings(),
+			sound: new AfplaySoundPlayer(),
+			notifier: new OsascriptNotifier(),
+			log: streamDeck.logger,
+		}),
+		log: streamDeck.logger,
+	});
 
 	constructor() {
 		super();
 		// Timers can fire late after sleep; redraw from the absolute end time as soon as the Mac wakes.
-		streamDeck.system.onSystemDidWakeUp(() => this.#apply(this.#coordinator.tick()));
+		streamDeck.system.onSystemDidWakeUp(() => this.#controller.wake());
 	}
 
 	override onWillAppear(ev: WillAppearEvent<PresetSettings>): void {
 		if (!ev.action.isKey()) return;
 		this.#keys.set(ev.action.id, ev.action);
-		this.#apply(this.#coordinator.keyAppeared(ev.action.id, ev.payload.settings));
+		this.#controller.keyAppeared(ev.action.id, ev.payload.settings);
 		this.#saveEffectiveDuration(ev.action, ev.payload.settings);
 	}
 
 	override onWillDisappear(ev: WillDisappearEvent<PresetSettings>): void {
 		this.#keys.delete(ev.action.id);
-		this.#coordinator.keyDisappeared(ev.action.id);
+		this.#controller.keyDisappeared(ev.action.id);
 	}
 
 	/** Fired when the Property Inspector saves this key's settings. */
 	override onDidReceiveSettings(ev: DidReceiveSettingsEvent<PresetSettings>): void {
-		this.#apply(this.#coordinator.settingsChanged(ev.action.id, ev.payload.settings));
+		this.#controller.settingsChanged(ev.action.id, ev.payload.settings);
 	}
 
 	/** The Property Inspector saves each committed entry (Enter, blur, close); once it closes, an unusable entry is replaced. */
@@ -61,11 +74,11 @@ export class PresetTimerAction extends SingletonAction<PresetSettings> {
 	}
 
 	override onKeyDown(ev: KeyDownEvent<PresetSettings>): void {
-		this.#apply(this.#coordinator.keyDown(ev.action.id));
+		this.#controller.keyDown(ev.action.id);
 	}
 
 	override onKeyUp(ev: KeyUpEvent<PresetSettings>): void {
-		this.#apply(this.#coordinator.keyUp(ev.action.id));
+		this.#controller.keyUp(ev.action.id);
 	}
 
 	/**
@@ -74,18 +87,7 @@ export class PresetTimerAction extends SingletonAction<PresetSettings> {
 	 */
 	#saveEffectiveDuration(action: { id: string; setSettings(s: PresetSettings): Promise<void> }, settings: PresetSettings): void {
 		if (parseDuration(settings.durationMinutes) !== undefined) return;
-		const durationMinutes = String(this.#coordinator.presetMinutes(action.id));
+		const durationMinutes = String(this.#controller.presetMinutes(action.id));
 		action.setSettings({ ...settings, durationMinutes }).catch((err: unknown) => streamDeck.logger.error("setSettings failed", err));
-	}
-
-	#apply(out: Output): void {
-		for (const render of out.renders) {
-			const key = this.#keys.get(render.keyId);
-			if (key === undefined) continue;
-			key.setImage(keyImageDataUrl(render)).catch((err: unknown) => streamDeck.logger.error("setImage failed", err));
-		}
-		// Alert and Focus integrations (AUS-1882, AUS-1883) will act on these transitions.
-		for (const event of out.events) streamDeck.logger.info("session", JSON.stringify(event));
-		this.#wake.schedule(this.#coordinator.nextChangeAt());
 	}
 }

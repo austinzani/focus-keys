@@ -16,7 +16,8 @@ export type KeyRender = (
 ) & { style: KeyStyle };
 
 /**
- * Session transitions, reported once each, for alert and Focus integrations to hook into.
+ * Session transitions, reported once each, for alert and Focus integrations to hook into. `completed`
+ * carries the session's id (increasing with each start, within this process) so its alert can be delivered once.
  * Replacing a running or paused session with another preset reports only `replaced`, never `completed` or
  * `cancelled`; `replaced` also starts the new session, so treat it as a start for `keyId`.
  */
@@ -25,7 +26,7 @@ export type SessionEvent =
 	| { type: "paused"; keyId: string }
 	| { type: "resumed"; keyId: string }
 	| { type: "cancelled"; keyId: string }
-	| { type: "completed"; keyId: string }
+	| { type: "completed"; keyId: string; sessionId: number; durationMs: number }
 	| { type: "replaced"; keyId: string; durationMs: number; fromKeyId: string; fromState: "running" | "paused" };
 
 export type Output = { renders: KeyRender[]; events: SessionEvent[] };
@@ -196,7 +197,7 @@ export class TimerCoordinator {
 		const session = this.#session;
 		if (session?.status === "running" && now >= session.endsAt) {
 			this.#session = { id: session.id, keyId: session.keyId, durationMs: session.durationMs, status: "completed" };
-			this.#events.push({ type: "completed", keyId: session.keyId });
+			this.#events.push({ type: "completed", keyId: session.keyId, sessionId: session.id, durationMs: session.durationMs });
 		}
 		for (const press of this.#presses.values()) {
 			if (press.resolved || now - press.downAt < HOLD_MS || this.#session?.keyId !== press.keyId) continue;

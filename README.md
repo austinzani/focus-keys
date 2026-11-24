@@ -48,7 +48,10 @@ npm run glyphs       # regenerates src/render/glyphs.generated.ts and the font l
 - `src/core/coordinator.ts` contains the timer logic and has no SDK imports. It takes key appearances, settings changes, key down/up, and clock ticks. It returns the image each key should show and the session transition events. A running session stores an absolute end time; a paused session stores its frozen remaining time.
 - `src/core/key-style.ts` validates each key's color and font settings.
 - `src/render/key-image.ts` draws a key as SVG: a large whole-minute number, plus a ring while running (key color) or paused (muted, frozen). Digits are drawn as path outlines from `src/render/glyphs.generated.ts`, so the look doesn't depend on fonts installed on the Mac.
-- `src/actions/preset-timer.ts` is the Stream Deck adapter. It forwards key and settings events and paints keys with `setImage`. Through `src/actions/wake-timer.ts` it wakes at the exact moment the coordinator reports the next change: a ring step, a minute boundary, completion, or a hold reaching its threshold.
+- `src/core/alerts.ts` validates the shared alert settings and decides what a completion does: which sound, and whether to show a notification with what text.
+- `src/actions/preset-controller.ts` wires everything without the SDK, so it is tested directly. It sends key events to the coordinator, paints its renders, passes its events to the alert dispatcher, and through `src/actions/wake-timer.ts` wakes at the exact moment the coordinator reports the next change: a ring step, a minute boundary, completion, or a hold reaching its threshold.
+- `src/alerts/dispatcher.ts` turns each `completed` event into a sound and/or notification, once per session. `src/alerts/macos.ts` plays sounds with `afplay` and shows notifications with `osascript`.
+- `src/actions/preset-timer.ts` is the Stream Deck adapter. It forwards SDK key and settings events to the controller, paints keys with `setImage`, and reads the alert settings from the plugin's global settings.
 - `com.austinzani.neo-pomodoro.sdPlugin/ui/preset.html` is the Property Inspector. It uses [sdpi-components](https://sdpi-components.dev) v4.0.1, vendored in `ui/vendor/` so it works offline; its MIT and bundled Lit BSD-3-Clause licenses are in `ui/vendor/LICENSES.md`.
 
 ### Timer behavior
@@ -67,7 +70,31 @@ All preset keys share one session.
 
 Taps act on key release, so a hold is never also counted as a tap. If the hold wake-up runs late, the release still counts as a hold. If a session finishes while its key is held, the completion stands and the hold then clears the 0. If it finishes before a quick tap is released, including when a late wake-up after sleep finds it already over, the tap does nothing more: it doesn't start a new session. Likewise, a tap does nothing if another key replaced its session while it was down.
 
-The coordinator reports each transition once, as an event for the alert and Focus work (AUS-1882, AUS-1883) to use: `started`, `paused`, `resumed`, `cancelled`, `completed`, and `replaced` (with the previous key and whether it was running or paused). `replaced` also starts the new session, so it counts as a start for the new key.
+The coordinator reports each transition once, as an event for the alert and Focus work (AUS-1882, AUS-1883) to use: `started`, `paused`, `resumed`, `cancelled`, `completed` (with the session id and length), and `replaced` (with the previous key and whether it was running or paused). `replaced` also starts the new session, so it counts as a start for the new key.
+
+### Completion alerts
+
+When a session reaches zero, its key shows **0** and the plugin plays the selected sound once and, if enabled, shows a macOS notification. Only `completed` alerts. Cancelling (hold), replacing (another preset), and pausing never do. A session that completes while its key is on another page, or while the Property Inspector is closed, still alerts on time. Each session alerts at most once, keyed by its session id.
+
+The settings are in an **Alerts** section at the bottom of every timer key's Property Inspector. They are plugin global settings, so all keys share one set, and they are read when a session completes. If Stream Deck doesn't return them within 2 seconds, that completion uses the defaults.
+
+| Setting | Default | Notes |
+| --- | --- | --- |
+| Sound | Glass | Glass, Hero, Ping, Submarine, Funk, Blow, Purr, Tink, or **None (silent)**. |
+| Notification | Off | Shows a banner titled "Neo Pomodoro". |
+| Text | `Time's up: {minutes}-minute timer finished.` | Used when the field is empty. `{minutes}` becomes the session's length. Up to 200 characters. Saves when you click away or close the Property Inspector, not on every keystroke. |
+
+Sound and notification are independent; you can turn either off, or both. The sounds are the built-in files in `/System/Library/Sounds`, played with `/usr/bin/afplay`. No sound file is bundled, so there's nothing to license. Playback doesn't depend on notification permission or Focus. It does follow the Mac's output volume and mute.
+
+The notification runs `/usr/bin/osascript` with AppleScript's `display notification`. It never sets a notification sound, so the only sound is the one above and nothing plays twice. The text is passed as arguments to the script's `on run argv` handler, never pasted into script source. Quotes, backslashes, newlines and emoji arrive unchanged, and text can't run as script. Both programs are run directly, without a shell.
+
+How macOS treats these notifications:
+
+- macOS attributes them to **Script Editor** (`com.apple.ScriptEditor2`), not to Stream Deck or this plugin. (Observed during development on macOS 27.0.1: the notification log shows `Connection com.apple.ScriptEditor2 with path: /usr/bin/osascript`, then the banner is delivered and presented.) Allowing, denying, or changing the banner style is done under **System Settings › Notifications › Script Editor**. Other scripts that use `display notification` share that setting.
+- If Script Editor hasn't asked before, macOS may ask for permission on the first notification.
+- A Focus mode can hide or delay the banner unless Script Editor is allowed in that Focus. Notification Center may still list it.
+- `osascript` exits successfully even when banners are denied or hidden, so the plugin can't detect authorization. The Property Inspector explains this. A failed or timed-out `osascript` or `afplay` is logged in the plugin log and doesn't affect the timer.
+- A notification under the plugin's own name would need a separate signed helper app using `UNUserNotificationCenter`. That isn't needed: the Script Editor route works without private APIs, extra binaries or network access.
 
 ### Preset durations
 
@@ -141,3 +168,21 @@ Do this on the physical Neo at normal viewing distance. Compare against the cont
 6. Note any font or color that's hard to read on the Neo, so it can be swapped before release.
 
 Notes: the action has no title field, so a user title can't hide the number. A custom image set on the key in the Stream Deck app still overrides the plugin's image. If the number doesn't appear, clear any custom image on that key. A running session isn't restored after a restart yet; that's AUS-1884.
+
+### Owner check on the Mac: completion alerts (AUS-1882)
+
+Use a key set to **1** minute. Have Mac volume up and no Focus on unless a step says otherwise.
+
+1. Open any timer key's Property Inspector. The **Alerts — shared by all timer keys** section shows Sound **Glass**, Notification unchecked, and an empty Text box.
+2. Start the 1-minute key and let it finish. The key shows **0**, Glass plays once, and no banner appears.
+3. Choose each sound in turn (Hero, Ping, Submarine, Funk, Blow, Purr, Tink) and let a 1-minute timer finish for at least two of them. Each is audible and plays once. To audition every sound quickly, run `afplay /System/Library/Sounds/Hero.aiff` and so on in Terminal; the plugin plays the same files.
+4. Choose **None (silent)**. A finished timer shows **0** with no sound.
+5. Open a different key's Property Inspector. It shows the same alert settings; changing them there changes them for every key.
+6. Check **Show a macOS notification** and leave the text empty. When a timer finishes, a banner from **Script Editor** says "Neo Pomodoro / Time's up: 1-minute timer finished." Only the selected sound plays, not a second notification sound. If macOS asks to allow Script Editor notifications, allow it and note that you were asked.
+7. Enter custom text such as `Stretch "now" — {minutes} min 🍅`. The banner shows it exactly, with `{minutes}` replaced.
+8. Set Sound to **None** with the notification on. The banner appears silently. Then set a sound with the notification off. Only the sound plays.
+9. In **System Settings › Notifications › Script Editor**, turn off **Allow notifications**. A finished timer still shows **0** and plays its sound, and the next timer starts normally. Turn it back on afterwards.
+10. Turn on a Focus that doesn't allow Script Editor. The banner may not appear, but the sound still plays.
+11. Start a key, then hold it to cancel. Wait past its end. Nothing plays. Start a 1-minute key, then press another key before it finishes. No alert comes when the first minute would have ended, only when the second session ends.
+12. Start a 1-minute key and switch the Neo to another page. When the minute is up, the sound plays once. Switch back; the key shows **0**.
+13. Check `com.austinzani.neo-pomodoro.sdPlugin/logs/` for `alert session=… sound=… notification=…` lines and no errors.

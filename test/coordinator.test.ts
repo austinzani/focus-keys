@@ -445,8 +445,37 @@ describe("session events", () => {
 
 		expect(t.events).toEqual([
 			{ type: "started", keyId: "key-a", durationMs: 5 * MIN },
-			{ type: "completed", keyId: "key-a" },
+			{ type: "completed", keyId: "key-a", sessionId: 1, durationMs: 5 * MIN },
 		]);
+	});
+
+	it("identifies each completed session separately, so an alert can be delivered once per session", () => {
+		const t = setup();
+		t.appear("key-a");
+		t.press("key-a");
+		t.elapse(5 * MIN);
+		t.press("key-a"); // restart the finished key
+		t.elapse(5 * MIN);
+
+		const ids = t.events.flatMap((e) => (e.type === "completed" ? [e.sessionId] : []));
+		expect(ids).toHaveLength(2);
+		expect(ids[1]).toBeGreaterThan(ids[0]);
+	});
+
+	it("reports no completion for a session that was cancelled or replaced, even after its end time", () => {
+		const t = setup();
+		t.appear("key-a");
+		t.appear("key-b", { durationMinutes: 15 });
+		t.press("key-a");
+		t.elapse(MIN);
+		t.press("key-b"); // replaces key-a's session
+		t.elapse(5 * MIN);
+		t.apply(t.coordinator.keyDown("key-b"));
+		t.elapse(HOLD_MS); // held: cancels key-b's session
+		t.apply(t.coordinator.keyUp("key-b"));
+		t.elapse(20 * MIN);
+
+		expect(t.events.map((e) => e.type)).toEqual(["started", "replaced", "cancelled"]);
 	});
 });
 

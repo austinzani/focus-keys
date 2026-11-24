@@ -5,6 +5,22 @@
 		<meta charset="utf-8" />
 		<!-- sdpi-components v4.0.1 (https://sdpi-components.dev), vendored so settings work offline. Licenses: vendor/LICENSES.md -->
 		<script src="vendor/sdpi-components.js"></script>
+		<style>
+			.section {
+				margin: 16px 0 4px 16px;
+				color: #d8d8d8;
+				font-family: system-ui, sans-serif;
+				font-size: 9pt;
+				font-weight: 600;
+			}
+			.note {
+				margin: 4px 16px 8px 16px;
+				color: #969696;
+				font-family: system-ui, sans-serif;
+				font-size: 8pt;
+				line-height: 1.4;
+			}
+		</style>
 	</head>
 
 	<body>
@@ -42,24 +58,80 @@
 			</sdpi-select>
 		</sdpi-item>
 
+		<!--
+			Alerts are plugin global settings (`global`): one set shared by every timer key, read when a timer
+			completes. Values must match SOUND_IDS in src/core/alerts.ts; "none" is silence.
+		-->
+		<div class="section">Alerts — shared by all timer keys</div>
+		<sdpi-item label="Sound">
+			<sdpi-select setting="sound" global default="glass">
+				<option value="glass">Glass (default)</option>
+				<option value="hero">Hero</option>
+				<option value="ping">Ping</option>
+				<option value="submarine">Submarine</option>
+				<option value="funk">Funk</option>
+				<option value="blow">Blow</option>
+				<option value="purr">Purr</option>
+				<option value="tink">Tink</option>
+				<option value="none">None (silent)</option>
+			</sdpi-select>
+		</sdpi-item>
+		<sdpi-item label="Notification">
+			<sdpi-checkbox setting="notificationEnabled" global label="Show a macOS notification"></sdpi-checkbox>
+		</sdpi-item>
+		<sdpi-item label="Text">
+			<!-- Saved by the script below on commit, not by a `setting` attribute; maxlength must match MAX_NOTIFICATION_TEXT. -->
+			<sdpi-textarea id="notificationText" rows="2" maxlength="200"></sdpi-textarea>
+		</sdpi-item>
+		<p class="note">
+			Leave the text empty for “Time's up: {minutes}-minute timer finished.” {minutes} becomes the timer's
+			length. The notification is silent; only the sound above plays.
+		</p>
+		<p class="note">
+			macOS shows these notifications as coming from <b>Script Editor</b>. The first one may ask for
+			permission. If no banner appears, allow Script Editor in System Settings › Notifications. A Focus
+			mode can hide or delay banners. The plugin can't tell whether a banner was shown; the timer and
+			sound work either way.
+		</p>
+
 		<script>
-			// No `setting` attribute on the field: sdpi-textfield would save on every keystroke, so typing 60
-			// would briefly save 6. Instead the entry is saved when committed: on Enter, when the field loses
-			// focus, or when the inspector closes.
-			const field = document.getElementById("duration");
+			// Text entries have no `setting` attribute: sdpi-textfield and sdpi-textarea would save on every
+			// keystroke, so typing 60 would briefly save 6, and each keystroke in the notification text would
+			// rewrite the shared global settings. Instead an entry is saved when committed: when the field loses
+			// focus, when the inspector closes, or (single-line duration only) on Enter.
+			function commitOnBlur(field, save, { enter }) {
+				const commit = () => save(field.value ?? "");
+				field.addEventListener("focusout", commit);
+				if (enter) {
+					field.addEventListener("keydown", (ev) => {
+						if (ev.key === "Enter") commit();
+					});
+				}
+				window.addEventListener("pagehide", commit);
+			}
+
+			// Per-key setting.
+			const duration = document.getElementById("duration");
 			const [, saveDuration] = SDPIComponents.useSettings(
 				"durationMinutes",
 				(value) => {
-					field.value = value === undefined ? "" : String(value);
+					duration.value = value === undefined ? "" : String(value);
 				},
 				null, // save immediately on commit; no debounce
 			);
-			const commit = () => saveDuration(field.value ?? "");
-			field.addEventListener("focusout", commit);
-			field.addEventListener("keydown", (ev) => {
-				if (ev.key === "Enter") commit();
-			});
-			window.addEventListener("pagehide", commit);
+			commitOnBlur(duration, saveDuration, { enter: true });
+
+			// Shared plugin global setting. useGlobalSettings merges into the same global settings object the
+			// `global` select and checkbox save, so their values are kept. Enter inserts a newline here.
+			const notificationText = document.getElementById("notificationText");
+			const [, saveNotificationText] = SDPIComponents.useGlobalSettings(
+				"notificationText",
+				(value) => {
+					notificationText.value = typeof value === "string" ? value : "";
+				},
+				null,
+			);
+			commitOnBlur(notificationText, saveNotificationText, { enter: false });
 		</script>
 	</body>
 </html>

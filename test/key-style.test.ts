@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { readFileSync } from "node:fs";
-
 import { FONT_IDS, parseKeyStyle } from "../src/core/key-style";
 import { GLYPH_FONTS } from "../src/render/glyphs.generated";
+import { piOptions } from "./support";
 
 describe("key style settings", () => {
 	it("offers five fonts, defaulting to Inter and the tomato ring color", () => {
@@ -13,9 +12,7 @@ describe("key style settings", () => {
 
 	it("has bundled digit outlines and a Property Inspector option for every font", () => {
 		expect(Object.keys(GLYPH_FONTS)).toEqual([...FONT_IDS]);
-		const html = readFileSync(new URL("../com.austinzani.neo-pomodoro.sdPlugin/ui/preset.html", import.meta.url), "utf8");
-		const options = [...html.matchAll(/<option value="([^"]+)"/g)].map((m) => m[1]);
-		expect(options).toEqual([...FONT_IDS]);
+		expect(piOptions("font")).toEqual([...FONT_IDS]);
 	});
 
 	it("keeps a valid font and color, lowercasing and expanding short hex", () => {
