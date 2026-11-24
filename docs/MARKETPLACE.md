@@ -60,8 +60,8 @@ All plugin images and drafts come from `npm run icons` (`scripts/generate-icons.
 | Tags and type (category) | owner | Set in Maker Console › Details. Suggested below. |
 | Release notes for every version | done (draft) | See below. |
 | Price | owner | Free suggested for 0.1. |
-| Privacy policy | done (once the repo is public) | Required only if the plugin collects identifiable data. It doesn't: no network access, no analytics. Link the user guide's Privacy section: https://github.com/austinzani/stream-deck-neo-pomodoro/blob/main/docs/USER_GUIDE.md#privacy |
-| Support / website links | done (once the repo is public) | Support: https://github.com/austinzani/stream-deck-neo-pomodoro/issues. Website: the repo. |
+| Privacy policy | done (once the repo is public) | Required only if the plugin collects identifiable data. It doesn't: no network access, no analytics. Link the user guide's Privacy section: https://github.com/austinzani/focus-keys/blob/main/docs/USER_GUIDE.md#privacy |
+| Support / website links | done (once the repo is public) | Support: https://github.com/austinzani/focus-keys/issues. Website: the repo. |
 | AI disclosure | owner | Elgato requires disclosing AI use, and products made entirely by AI aren't eligible. This plugin was written with substantial AI assistance under the owner's direction, review and testing. Describe that honestly in the submission. Whether it qualifies is Elgato's call. |
 | Brand spelling | done | Copy uses "Stream Deck", "Stream Deck Neo", "plugin", "key" per https://docs.elgato.com/guidelines/branding. |
 

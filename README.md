@@ -12,8 +12,6 @@ Requirements: macOS 12 or later, Stream Deck 7.1 or later. Mac only.
 - [Marketplace](docs/MARKETPLACE.md): listing draft, requirements, imagery, licensing, submission steps.
 - Background: [specification](docs/spec-draft.md), [ticket breakdown](docs/tickets-draft.md), [platform research](docs/research.md).
 
-Linear project: Stream Deck Neo — Pomodoro Timer.
-
 ## Quickstart (development)
 
 ```sh
