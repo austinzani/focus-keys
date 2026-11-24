@@ -10,12 +10,14 @@ const CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 const BACKGROUND = "#111111";
 const NUMBER_COLOR = "#f5f5f5";
 const RING_COLOR = "#ff6347";
+/** Muted grey for a paused session's frozen ring. */
+const PAUSED_RING_COLOR = "#6e6e6e";
 const RING_TRACK = "#2b2b2b";
 const FONT_FAMILY = "-apple-system, 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 /**
  * Draws one key: a large centered whole-minute number on a dark background, plus a ring arc
- * covering the remaining fraction while running. Never shows seconds.
+ * covering the remaining fraction while running, frozen in muted grey while paused. Never shows seconds.
  */
 export function renderKeySvg(render: KeyRender): string {
 	const text = String(render.minutes);
@@ -24,9 +26,9 @@ export function renderKeySvg(render: KeyRender): string {
 	const baseline = CENTER + fontSize * 0.35;
 
 	const ring =
-		render.state === "running"
+		render.state === "running" || render.state === "paused"
 			? `<circle cx="${CENTER}" cy="${CENTER}" r="${RING_RADIUS}" fill="none" stroke="${RING_TRACK}" stroke-width="${RING_WIDTH}"/>` +
-				`<circle data-role="progress" cx="${CENTER}" cy="${CENTER}" r="${RING_RADIUS}" fill="none" stroke="${RING_COLOR}" stroke-width="${RING_WIDTH}" ` +
+				`<circle data-role="progress" cx="${CENTER}" cy="${CENTER}" r="${RING_RADIUS}" fill="none" stroke="${render.state === "paused" ? PAUSED_RING_COLOR : RING_COLOR}" stroke-width="${RING_WIDTH}" ` +
 				`stroke-dasharray="${fmt(CIRCUMFERENCE * render.ring)} ${fmt(CIRCUMFERENCE)}" transform="rotate(-90 ${CENTER} ${CENTER})"/>`
 			: "";
 

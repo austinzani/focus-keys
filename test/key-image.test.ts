@@ -26,6 +26,18 @@ describe("key image", () => {
 		expect(halfOn).toBeCloseTo(circumference / 2);
 	});
 
+	it("draws a paused key with the same frozen arc in a muted color, distinct from running", () => {
+		const running = renderKeySvg({ keyId: "k", state: "running", minutes: 4, ring: 0.7 });
+		const paused = renderKeySvg({ keyId: "k", state: "paused", minutes: 4, ring: 0.7 });
+		const stroke = (svg: string) => progressArc(svg)?.match(/stroke="([^"]+)"/)?.[1];
+		const dashOn = (svg: string) => progressArc(svg)?.match(/stroke-dasharray="([\d.]+)/)?.[1];
+
+		expect(numberText(paused)).toBe("4");
+		expect(dashOn(paused)).toBe(dashOn(running));
+		expect(stroke(paused)).toBe("#6e6e6e");
+		expect(stroke(paused)).not.toBe(stroke(running));
+	});
+
 	it("draws a finished key as 0 with no arc", () => {
 		const svg = renderKeySvg({ keyId: "k", state: "done", minutes: 0 });
 

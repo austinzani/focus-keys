@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>Timer Preset Settings</title>
+		<meta charset="utf-8" />
+		<!-- sdpi-components v4.0.1 (https://sdpi-components.dev), vendored so settings work offline. Licenses: vendor/LICENSES.md -->
+		<script src="vendor/sdpi-components.js"></script>
+	</head>
+
+	<body>
+		<!--
+			Each key saves its own settings. Whole minutes from 1 to 180; other values are ignored and the
+			key keeps its previous duration. A running or paused session keeps its duration; the new one
+			applies to the next start.
+		-->
+		<sdpi-item label="Minutes">
+			<sdpi-textfield
+				id="duration"
+				placeholder="5"
+				pattern="(?:[1-9]|[1-9][0-9]|1[0-7][0-9]|180)"
+				maxlength="3"
+				required
+			></sdpi-textfield>
+		</sdpi-item>
+
+		<script>
+			// No `setting` attribute on the field: sdpi-textfield would save on every keystroke, so typing 60
+			// would briefly save 6. Instead the entry is saved when committed: on Enter, when the field loses
+			// focus, or when the inspector closes.
+			const field = document.getElementById("duration");
+			const [, saveDuration] = SDPIComponents.useSettings(
+				"durationMinutes",
+				(value) => {
+					field.value = value === undefined ? "" : String(value);
+				},
+				null, // save immediately on commit; no debounce
+			);
+			const commit = () => saveDuration(field.value ?? "");
+			field.addEventListener("focusout", commit);
+			field.addEventListener("keydown", (ev) => {
+				if (ev.key === "Enter") commit();
+			});
+			window.addEventListener("pagehide", commit);
+		</script>
+	</body>
+</html>
