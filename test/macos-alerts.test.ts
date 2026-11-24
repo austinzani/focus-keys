@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
 	AfplaySoundPlayer,
@@ -30,6 +30,23 @@ describe.skipIf(process.platform !== "darwin")("macOS sound player", () => {
 		for (const { file, args } of calls) {
 			expect(file).toBe("/usr/bin/afplay");
 			expect(existsSync(args[0])).toBe(true);
+		}
+	});
+
+	it("plays the long sound five times with a pause between plays", async () => {
+		vi.useFakeTimers();
+		try {
+			const calls = recordingRun();
+			const player = new AfplaySoundPlayer(calls.run);
+			const done = player.play("glass", "long");
+			await vi.advanceTimersByTimeAsync(0);
+			expect(calls.calls).toHaveLength(1);
+			await vi.advanceTimersByTimeAsync(4 * AfplaySoundPlayer.REPEAT_GAP_MS);
+			await done;
+			expect(calls.calls).toHaveLength(5);
+			expect(calls.calls.every(({ file, args }) => file === "/usr/bin/afplay" && args[0] === "/System/Library/Sounds/Glass.aiff")).toBe(true);
+		} finally {
+			vi.useRealTimers();
 		}
 	});
 });

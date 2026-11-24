@@ -4,7 +4,7 @@ import { access, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type { SoundId } from "../core/alerts";
+import type { SoundId, SoundLength } from "../core/alerts";
 import type { Notifier, SoundPlayer } from "./dispatcher";
 
 /** Runs a program directly (no shell) and settles with its standard output when it exits. */
@@ -36,11 +36,17 @@ const NOTIFY_TIMEOUT_MS = 10_000;
 
 /** Plays a built-in macOS sound with `afplay`, independently of notifications and Focus. Nothing is bundled. */
 export class AfplaySoundPlayer implements SoundPlayer {
+	static readonly LONG_PLAYS = 5;
+	static readonly REPEAT_GAP_MS = 1_000;
 	constructor(private readonly run: RunFile = runFile) {}
 
-	async play(sound: SoundId): Promise<void> {
+	async play(sound: SoundId, length: SoundLength = "short"): Promise<void> {
 		const file = `${SOUNDS_DIR}/${sound[0].toUpperCase()}${sound.slice(1)}.aiff`;
-		await this.run("/usr/bin/afplay", [file], SOUND_TIMEOUT_MS);
+		const plays = length === "long" ? AfplaySoundPlayer.LONG_PLAYS : 1;
+		for (let i = 0; i < plays; i++) {
+			if (i > 0) await new Promise<void>((resolve) => setTimeout(resolve, AfplaySoundPlayer.REPEAT_GAP_MS));
+			await this.run("/usr/bin/afplay", [file], SOUND_TIMEOUT_MS);
+		}
 	}
 }
 

@@ -9,7 +9,7 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 - Mac volume up, no Focus on unless a step says otherwise.
 - Installed plugin log: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.austinzani.focus-keys.sdPlugin/logs/`. Look for `session {…}`, `restored session …` and `alert session=… sound=… notification=…` lines.
 - State file: `~/Library/Application Support/com.austinzani.focus-keys/state.json`. Reset: quit Stream Deck, delete the folder, reopen.
-- "One alert" means one sound and at most one banner, never two.
+- "One alert" means one sound sequence (one play for Short or five for Long) and at most one banner, never two.
 
 ### Release blockers vs. notes
 
@@ -20,7 +20,7 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 
 - [ ] 1. Remove the dev link: `npx streamdeck unlink com.austinzani.focus-keys`. In Stream Deck › Preferences › Plugins, Focus Keys is gone, and `~/Library/Application Support/com.elgato.StreamDeck/Plugins/` has no `com.austinzani.focus-keys.sdPlugin`.
 - [ ] 2. Optional, closer to a user's Mac: `npx streamdeck dev --disable`, and move `~/Library/Application Support/com.austinzani.focus-keys/` aside for a fresh state.
-- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Focus Keys** category appears with **Timer Preset** and **Break** (cup icon), each with its icon in the action list and in Preferences › Plugins showing version 0.1.0.0.
+- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Focus Keys** category appears with **Timer Preset** and **Break** (cup icon), each with its icon in the action list and in Preferences › Plugins showing version 0.1.1.0.
 - [ ] 4. The installed folder's `logs/` contains a log with `Focus Keys plugin connected` and no errors.
 
 ## 2. Four-key timer
@@ -65,6 +65,7 @@ Use a 1-minute key.
 - [ ] 11. Start, hold to cancel, wait past the end: nothing plays. Start a 1-minute key, press another before it ends: no alert at the first minute, only when the second timer ends.
 - [ ] 12. Start a 1-minute key and switch pages: the sound plays once on time; switching back shows **0**.
 - [ ] 13. Log shows `alert session=…` lines and no errors.
+- [ ] 14. Set **Sound length** to **Long**: a finished timer plays the chosen sound five times, with a pause between plays, and sends at most one notification. **Short** plays it once; **None (silent)** remains silent for either length. The setting is shared by all keys and survives restart.
 
 ## 5. Focus
 

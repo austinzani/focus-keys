@@ -69,7 +69,8 @@ The **Alerts — shared by all timer keys** section at the bottom of every timer
 
 | Setting | Default | Notes |
 | --- | --- | --- |
-| Sound | Glass | Glass, Hero, Ping, Submarine, Funk, Blow, Purr, Tink, or **None (silent)**. These are the Mac's built-in sounds, played once. |
+| Sound | Glass | Glass, Hero, Ping, Submarine, Funk, Blow, Purr, Tink, or **None (silent)**. These are the Mac's built-in sounds. |
+| Sound length | Short | **Short** plays the sound once. **Long** plays it five times with a one-second pause between plays. This setting is shared by all timer keys. |
 | Notification | Off | **Show a macOS notification**: a banner titled "Focus Keys". |
 | Text | `Time's up: {minutes}-minute timer finished.` | Used when the field is empty. `{minutes}` becomes the timer's length. Up to 200 characters. |
 

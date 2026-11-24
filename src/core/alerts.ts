@@ -8,12 +8,13 @@ import type { TimerKind } from "./coordinator";
 /** Built-in macOS sounds offered as completion sounds. Each id is the lowercase name of a file in /System/Library/Sounds. */
 export const SOUND_IDS = ["glass", "hero", "ping", "submarine", "funk", "blow", "purr", "tink"] as const;
 export type SoundId = (typeof SOUND_IDS)[number];
+export type SoundLength = "short" | "long";
 
 /** Global settings as the Property Inspector saves them. Anything may be missing or malformed. */
-export type AlertSettings = { sound?: unknown; notificationEnabled?: unknown; notificationText?: unknown };
+export type AlertSettings = { sound?: unknown; soundLength?: unknown; notificationEnabled?: unknown; notificationText?: unknown };
 
 /** Validated alert settings. */
-export type AlertPrefs = { sound: SoundId | "none"; notificationEnabled: boolean; notificationText: string };
+export type AlertPrefs = { sound: SoundId | "none"; soundLength: SoundLength; notificationEnabled: boolean; notificationText: string };
 
 /** What to do for one completed session. A missing field means do nothing of that kind. */
 export type AlertPlan = { sound?: SoundId; notification?: { title: string; body: string } };
@@ -33,6 +34,7 @@ export function parseAlertPrefs(settings: AlertSettings | undefined): AlertPrefs
 	const text = typeof settings?.notificationText === "string" ? settings.notificationText.trim() : "";
 	return {
 		sound,
+		soundLength: settings?.soundLength === "long" ? "long" : "short",
 		notificationEnabled: settings?.notificationEnabled === true,
 		notificationText: text === "" ? DEFAULT_NOTIFICATION_TEXT : text,
 	};

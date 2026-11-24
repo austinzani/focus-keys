@@ -15,6 +15,14 @@ describe("alert preferences", () => {
 		expect(planAlert(parseAlertPrefs({ sound: "none" }), 5 * MIN)).toEqual({});
 	});
 
+	it("uses short sounds for existing or invalid settings and accepts long sounds", () => {
+		for (const soundLength of [undefined, "short", "LONG", null, 5]) {
+			expect(parseAlertPrefs({ soundLength }).soundLength).toBe("short");
+		}
+		expect(parseAlertPrefs({ soundLength: "long" }).soundLength).toBe("long");
+		expect(piOptions("soundLength")).toEqual(["short", "long"]);
+	});
+
 	it("use the selected sound, and the default for an unknown one", () => {
 		expect(planAlert(parseAlertPrefs({ sound: "submarine" }), 5 * MIN)).toEqual({ sound: "submarine" });
 		for (const sound of ["Glass", "../../etc/passwd", 3, null, ""]) {

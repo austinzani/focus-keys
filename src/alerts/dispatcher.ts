@@ -1,9 +1,9 @@
-import { type AlertSettings, parseAlertPrefs, planAlert, type SoundId } from "../core/alerts";
+import { type AlertSettings, parseAlertPrefs, planAlert, type SoundId, type SoundLength } from "../core/alerts";
 import type { SessionEvent } from "../core/coordinator";
 
 /** Plays one of the offered sounds. Rejects if playback could not start or failed. */
 export interface SoundPlayer {
-	play(sound: SoundId): Promise<void>;
+	play(sound: SoundId, length: SoundLength): Promise<void>;
 }
 
 /** Shows a silent notification banner. Rejects if the request failed; a hidden or denied banner may still resolve. */
@@ -89,10 +89,11 @@ export class AlertDispatcher {
 			log.error("Could not read alert settings; using defaults", err);
 		}
 		await marked;
-		const plan = planAlert(parseAlertPrefs(settings), event.durationMs, event.kind ?? "focus");
-		log.info(`alert session=${event.sessionId} sound=${plan.sound ?? "none"} notification=${plan.notification !== undefined}`);
+		const prefs = parseAlertPrefs(settings);
+		const plan = planAlert(prefs, event.durationMs, event.kind ?? "focus");
+		log.info(`alert session=${event.sessionId} sound=${plan.sound ?? "none"} notification=${plan.notification !== undefined} soundLength=${prefs.soundLength}`);
 		await Promise.all([
-			plan.sound === undefined ? undefined : this.ports.sound.play(plan.sound).catch((err: unknown) => log.error("Completion sound failed", err)),
+			plan.sound === undefined ? undefined : this.ports.sound.play(plan.sound, prefs.soundLength).catch((err: unknown) => log.error("Completion sound failed", err)),
 			plan.notification === undefined
 				? undefined
 				: this.ports.notifier

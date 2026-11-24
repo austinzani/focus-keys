@@ -17,6 +17,36 @@ describe("alert dispatcher", () => {
 		expect(t.notified).toEqual([]);
 	});
 
+	it("passes the long setting to the player while sending only one notification", async () => {
+		const played: unknown[][] = [];
+		const notified: string[] = [];
+		const dispatcher = new AlertDispatcher({
+			loadSettings: async () => ({ sound: "ping", soundLength: "long", notificationEnabled: true }),
+			sound: { play: async (...args) => void played.push(args) },
+			notifier: { notify: async (_title, body) => void notified.push(body) },
+			log: { info: () => {}, error: () => {} },
+		});
+		await dispatcher.handle([completed(1)]);
+		await dispatcher.handle([completed(1)]);
+		expect(played).toEqual([["ping", "long"]]);
+		expect(notified).toEqual(["Time's up: 5-minute timer finished."]);
+	});
+
+	it("does not delay the notification until the long sound ends", async () => {
+		let finishSound: () => void = () => {};
+		const notified: string[] = [];
+		const dispatcher = new AlertDispatcher({
+			loadSettings: async () => ({ soundLength: "long", notificationEnabled: true }),
+			sound: { play: () => new Promise<void>((resolve) => { finishSound = resolve; }) },
+			notifier: { notify: async (_title, body) => void notified.push(body) },
+			log: { info: () => {}, error: () => {} },
+		});
+		const done = dispatcher.handle([completed(1)]);
+		await vi.waitFor(() => expect(notified).toHaveLength(1));
+		finishSound();
+		await done;
+	});
+
 	it("does nothing for transitions other than completion", async () => {
 		const t = fakeAlertPorts({ notificationEnabled: true });
 		await t.dispatcher.handle([
