@@ -3,11 +3,13 @@
 //
 //   npm run notifier                      ad-hoc signed: works on this Mac only. Fine for development.
 //   npm run notifier -- --sign "Developer ID Application: Name (TEAMID)" --notarize <keychain-profile>
+//   npm run notifier -- --sign "Developer ID Application: Name (TEAMID)" --notarize-asc
 //                                         release build: Developer ID signed, hardened runtime, notarized and stapled.
 //
-// The keychain profile is one made once with
+// --notarize uses notarytool with a keychain profile made once with
 //   xcrun notarytool store-credentials <profile> --apple-id <email> --team-id <TEAMID>
-// (it asks for an app-specific password from account.apple.com). The built app is git-ignored; `npm run package`
+// (it asks for an app-specific password from account.apple.com). --notarize-asc uses the `asc` CLI's default
+// App Store Connect API key profile instead (`asc auth doctor` to check). The built app is git-ignored; `npm run package`
 // refuses to pack without it, and warns when it isn't notarized.
 import { execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -22,9 +24,10 @@ const app = join(root, "com.austinzani.focus-keys.sdPlugin", "notifier", "Focus 
 const exe = "focus-keys-notifier";
 const { version } = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 
-const { values } = parseArgs({ options: { sign: { type: "string", default: "-" }, notarize: { type: "string" } } });
+const { values } = parseArgs({ options: { sign: { type: "string", default: "-" }, notarize: { type: "string" }, "notarize-asc": { type: "boolean", default: false } } });
 const adHoc = values.sign === "-";
-if (values.notarize !== undefined && adHoc) {
+const notarize = values.notarize !== undefined || values["notarize-asc"];
+if (notarize && adHoc) {
 	console.error("build-notifier: --notarize needs --sign with a Developer ID Application identity");
 	process.exit(1);
 }
@@ -67,14 +70,20 @@ try {
 	run("codesign", [...signArgs, app]);
 	run("codesign", ["--verify", "--strict", "--verbose=2", app]);
 
-	if (values.notarize !== undefined) {
+	if (notarize) {
 		const zip = join(tmp, "notifier.zip");
 		run("ditto", ["-c", "-k", "--keepParent", app, zip]);
-		run("xcrun", ["notarytool", "submit", zip, "--keychain-profile", values.notarize, "--wait"]);
+		if (values["notarize-asc"]) {
+			const out = execFileSync("asc", ["notarization", "submit", "--file", zip, "--wait", "--timeout", "30m"], { encoding: "utf8" });
+			console.log(out);
+			if (!/accepted/i.test(out)) throw new Error("notarization was not accepted; see the asc output above");
+		} else {
+			run("xcrun", ["notarytool", "submit", zip, "--keychain-profile", values.notarize, "--wait"]);
+		}
 		run("xcrun", ["stapler", "staple", app]);
 		run("spctl", ["--assess", "--type", "execute", "--verbose=2", app]);
 	}
-	console.log(`\n${app} (${adHoc ? "ad-hoc signed: this Mac only" : values.notarize ? "Developer ID, notarized" : "Developer ID, NOT notarized"})`);
+	console.log(`\n${app} (${adHoc ? "ad-hoc signed: this Mac only" : notarize ? "Developer ID, notarized" : "Developer ID, NOT notarized"})`);
 } finally {
 	rmSync(tmp, { recursive: true, force: true });
 }

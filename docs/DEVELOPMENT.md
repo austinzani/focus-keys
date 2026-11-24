@@ -30,6 +30,8 @@ Release build (needs a **Developer ID Application** certificate in the keychain 
 ```sh
 xcrun notarytool store-credentials focus-keys --apple-id <email> --team-id <TEAMID>   # once; asks for an app-specific password
 npm run notifier -- --sign "Developer ID Application: <Name> (<TEAMID>)" --notarize focus-keys
+# or, with an App Store Connect API key set up in the asc CLI (asc auth doctor):
+npm run notifier -- --sign "Developer ID Application: <Name> (<TEAMID>)" --notarize-asc
 ```
 
 That signs with the hardened runtime and a timestamp, notarizes, staples and checks with `spctl`. `npm run package` refuses to pack without the helper and warns if it isn't notarized.
