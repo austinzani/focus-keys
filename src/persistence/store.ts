@@ -87,7 +87,7 @@ export class StateStore {
 			return new StateStore(storage, log, EMPTY, false);
 		} catch (err) {
 			log.error(
-				`Saved timer state ${problem} and couldn't be moved aside (${errorText(err)}); the timer starts idle and won't be saved this run, leaving the file as it is (see README, Troubleshooting)`,
+				`Saved timer state ${problem} and couldn't be moved aside (${errorText(err)}); the timer starts idle and won't be saved this run, leaving the file as it is (see docs/USER_GUIDE.md, Troubleshooting)`,
 				cause ?? err,
 			);
 			return new StateStore(storage, log, EMPTY, true);

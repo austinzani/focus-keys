@@ -1,7 +1,8 @@
 {
 	"name": "neo-pomodoro",
+	"version": "0.1.0",
 	"private": true,
-	"description": "Mac-only Stream Deck Neo plugin: whole-minute Pomodoro countdown (working name).",
+	"description": "Mac-only Stream Deck Neo plugin: whole-minute Pomodoro countdown (provisional name).",
 	"type": "module",
 	"scripts": {
 		"build": "rollup -c",
@@ -13,7 +14,9 @@
 		"link": "streamdeck link com.austinzani.neo-pomodoro.sdPlugin",
 		"restart": "streamdeck restart com.austinzani.neo-pomodoro",
 		"glyphs": "node scripts/generate-glyphs.mjs",
-		"preview": "node scripts/preview.mjs"
+		"preview": "node scripts/preview.mjs",
+		"icons": "node scripts/generate-icons.mjs",
+		"package": "node scripts/package.mjs"
 	},
 	"dependencies": {
 		"@elgato/streamdeck": "^3.0.6"

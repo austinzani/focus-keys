@@ -13,3 +13,6 @@ node_modules/
 # Contact sheets from npm run preview
 preview/
 focus-prototype-*.jsonl
+
+# npm run package output (package + gallery renders)
+release/

@@ -2,8 +2,8 @@
 /**
  * Owner-run prototype for AUS-1883: answers what Apple's Shortcuts can do with Focus on this Mac.
  * It CHANGES FOCUS (and Focus syncs to your other Apple devices if "Share across devices" is on).
- * Run it only at the Mac, after creating the four test shortcuts described in README
- * ("Owner prototype: Focus via Shortcuts"). Nothing else on the Mac is changed.
+ * Run it only at the Mac, after creating the four test shortcuts described in docs/ACCEPTANCE_CHECKLIST.md
+ * ("5a. Prototype in Terminal"). Nothing else on the Mac is changed.
  *
  *   node scripts/focus-prototype.mjs [results-file]
  *
