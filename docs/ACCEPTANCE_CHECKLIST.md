@@ -139,11 +139,11 @@ Product calls from this pass:
 
 | Group | Pass / fail | Notes (blockers first) |
 | --- | --- | --- |
-| 1. Install | | |
-| 2. Four-key timer | | |
-| 3. Appearance | | |
-| 4. Alerts | | |
-| 5a. Focus prototype | | |
-| 5b. Plugin Focus | | |
-| 6. Recovery | | |
-| 7. Uninstall | | |
+| 1. Install | Partial pass | Packaged plugin installed and connected; both actions appear. Remaining clean-setup checks are unverified. |
+| 2. Four-key timer | Partial pass | On a virtual test profile, start, pause, resume and cancel were logged; a one-minute timer completed on time. Four-key and Break checks remain. |
+| 3. Appearance | Partial | One idle preset displayed its large number on the virtual device. Font, color and physical Neo checks remain. |
+| 4. Alerts | Partial | One-minute completion logged one Glass alert and the owner heard a sound. The signed helper did not launch during an installed-plugin test; Script Editor fallback was attempted but no banner was seen. macOS had Focus Keys notifications disabled; retest after permission is enabled. |
+| 5a. Focus prototype | Not tested | Requires the owner to be informed before Focus changes. |
+| 5b. Plugin Focus | Not tested | |
+| 6. Recovery | Not tested | |
+| 7. Uninstall | Not tested | Plugin remains installed. |
