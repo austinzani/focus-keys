@@ -96,3 +96,47 @@ describe("alert dispatcher", () => {
 		}
 	});
 });
+
+describe("alert delivery across restarts", () => {
+	it("skips a completion already alerted before the restart", async () => {
+		const t = fakeAlertPorts({}, { lastAlertedSessionId: 4, markAlerted: async () => true });
+		await t.dispatcher.handle([completed(4)]);
+		await t.dispatcher.handle([completed(3)]);
+		expect(t.played).toEqual([]);
+		await t.dispatcher.handle([completed(5)]);
+		expect(t.played).toEqual(["glass"]);
+	});
+
+	it("saves the alert as delivered before playing it, so a crash mid-alert never repeats it", async () => {
+		const order: string[] = [];
+		let saved: () => void = () => {};
+		const t = fakeAlertPorts(
+			{},
+			{
+				lastAlertedSessionId: 0,
+				markAlerted: (id) => {
+					order.push(`mark ${id}`);
+					return new Promise((resolve) => (saved = () => resolve(true)));
+				},
+			},
+		);
+		const done = t.dispatcher.handle([completed(1)]);
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(order).toEqual(["mark 1"]);
+		expect(t.played).toEqual([]);
+		saved();
+		await done;
+		expect(t.played).toEqual(["glass"]);
+	});
+
+	it.each([
+		["reports failure", () => Promise.resolve(false)],
+		["throws", () => Promise.reject(new Error("disk full"))],
+	])("still alerts when saving the delivery %s", async (_name, markAlerted) => {
+		const t = fakeAlertPorts({}, { lastAlertedSessionId: 0, markAlerted });
+		await t.dispatcher.handle([completed(1)]);
+		await t.dispatcher.handle([completed(1)]);
+		expect(t.played).toEqual(["glass"]);
+		expect(t.errors.length).toBeGreaterThan(0);
+	});
+});

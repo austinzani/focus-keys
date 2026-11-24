@@ -21,8 +21,15 @@ const replaced = (sessionId: number, fromState: "running" | "paused", keyId = "k
 });
 
 /** A fake `shortcuts` runner: records each run; names in `failing` reject, names in `timingOut` reject as timed out. */
-function setup(settings: Record<string, unknown> | (() => Promise<Record<string, unknown>>) = ON, failing: string[] = [], timingOut: string[] = []) {
+function setup(
+	settings: Record<string, unknown> | (() => Promise<Record<string, unknown>>) = ON,
+	failing: string[] = [],
+	timingOut: string[] = [],
+	saved?: { focusSessionId: number; failSave?: boolean },
+) {
 	const ran: string[] = [];
+	/** Saves of the Focus record and shortcut runs, in order. */
+	const order: string[] = [];
 	const failures: { keyId: string; message: string }[] = [];
 	const errors: string[] = [];
 	/** Every failure and success reported, in order. */
@@ -30,6 +37,7 @@ function setup(settings: Record<string, unknown> | (() => Promise<Record<string,
 	const runner: ShortcutRunner = {
 		run: async (name) => {
 			ran.push(name);
+			order.push(`run ${name}`);
 			if (failing.includes(name)) throw new Error(`Couldn't find shortcut ${name}`);
 			if (timingOut.includes(name)) throw new ShortcutTimeoutError(`Shortcut "${name}" timed out`);
 		},
@@ -43,12 +51,21 @@ function setup(settings: Record<string, unknown> | (() => Promise<Record<string,
 		},
 		reportSuccess: () => void reports.push("ok"),
 		log: { info: () => {}, error: (m) => errors.push(m) },
+		record:
+			saved &&
+			{
+				focusSessionId: saved.focusSessionId,
+				save: async (focusSessionId) => {
+					order.push(`save ${focusSessionId}`);
+					return saved.failSave !== true;
+				},
+			},
 	});
 	/** Delivers each event in its own batch once the previous one is done, as separate key presses would be. */
 	const oneByOne = async (...events: SessionEvent[]) => {
 		for (const event of events) await dispatcher.handle([event]);
 	};
-	return { dispatcher, oneByOne, ran, failures, errors, reports };
+	return { dispatcher, oneByOne, ran, failures, errors, reports, order };
 }
 
 describe("focus dispatcher", () => {
@@ -320,5 +337,88 @@ describe("focus dispatcher", () => {
 			await t.dispatcher.handle([completed(1)]);
 			expect(t.ran).toEqual(["Work Focus", "Focus Off", "Work Focus", "Focus Off"]);
 		});
+	});
+});
+
+describe("focus record across restarts", () => {
+	it("saves the session before running its start shortcut, and clears it before running the end", async () => {
+		const t = setup(ON, [], [], { focusSessionId: 0 });
+		await t.oneByOne(started(1), completed(1));
+		expect(t.order).toEqual(["save 1", "run Work Focus", "save 0", "run Focus Off"]);
+	});
+
+	it("clears the record when the start shortcut fails, and keeps it when it times out", async () => {
+		const failed = setup(ON, ["Work Focus"], [], { focusSessionId: 0 });
+		await failed.oneByOne(started(1));
+		expect(failed.order).toEqual(["save 1", "run Work Focus", "save 0"]);
+
+		const timedOut = setup(ON, [], ["Work Focus"], { focusSessionId: 0 });
+		await timedOut.oneByOne(started(1));
+		expect(timedOut.order).toEqual(["save 1", "run Work Focus"]);
+	});
+
+	it("moves the record to the new session when a preset change keeps Focus on, without running anything", async () => {
+		const t = setup(ON, [], [], { focusSessionId: 0 });
+		await t.oneByOne(started(1), replaced(2, "running"));
+		expect(t.order).toEqual(["save 1", "run Work Focus", "save 2"]);
+	});
+
+	it("clears the record when the end runs nothing (switching off or no end shortcut)", async () => {
+		const settings = { ...ON };
+		const t = setup(async () => settings, [], [], { focusSessionId: 0 });
+		await t.oneByOne(started(1));
+		settings.focusEnabled = false;
+		await t.oneByOne(paused(1));
+		expect(t.order).toEqual(["save 1", "run Work Focus", "save 0"]);
+	});
+
+	it("doesn't run the start again for a restored session it already started, and ends it once", async () => {
+		const t = setup(ON, [], [], { focusSessionId: 4 });
+		await t.oneByOne(started(4), completed(4), completed(4));
+		expect(t.ran).toEqual(["Focus Off"]);
+	});
+
+	it("ends a restored focus session whose work stopped while the plugin was stopped, once", async () => {
+		const t = setup(ON, [], [], { focusSessionId: 4 });
+		await Promise.all([t.dispatcher.endLeftover("key-a"), t.dispatcher.endLeftover("key-a")]);
+		await t.dispatcher.endLeftover("key-a");
+		expect(t.ran).toEqual(["Focus Off"]);
+		expect(t.order).toEqual(["save 0", "run Focus Off"]);
+	});
+
+	it("ends a leftover focus session only once when its completion is also delivered", async () => {
+		const t = setup(ON, [], [], { focusSessionId: 4 });
+		const done = t.dispatcher.handle([completed(4)]);
+		await Promise.all([done, t.dispatcher.endLeftover("key-a")]);
+		expect(t.ran).toEqual(["Focus Off"]);
+	});
+
+	it("has nothing to end after a restart when it hadn't turned Focus on", async () => {
+		const t = setup(ON, [], [], { focusSessionId: 0 });
+		await t.dispatcher.endLeftover("key-a");
+		expect(t.ran).toEqual([]);
+	});
+
+	it("saves the record again with the next transition after a failed save", async () => {
+		const saved = { focusSessionId: 0, failSave: true };
+		const t = setup(ON, [], [], saved);
+		await t.oneByOne(started(1));
+		saved.failSave = false;
+		await t.oneByOne(replaced(2, "running"));
+		await t.oneByOne(replaced(3, "running"));
+		expect(t.order).toEqual(["save 1", "run Work Focus", "save 2", "save 3"]);
+	});
+
+	it("keeps Focus on through a preset change after a restart, and ends it once for the new session", async () => {
+		const t = setup(ON, [], [], { focusSessionId: 4 });
+		await t.oneByOne(replaced(5, "running"), completed(5));
+		expect(t.order).toEqual(["save 5", "save 0", "run Focus Off"]);
+	});
+
+	it("still switches Focus when the record can't be saved, and logs it", async () => {
+		const t = setup(ON, [], [], { focusSessionId: 0, failSave: true });
+		await t.oneByOne(started(1), completed(1));
+		expect(t.ran).toEqual(["Work Focus", "Focus Off"]);
+		expect(t.errors).not.toHaveLength(0);
 	});
 });

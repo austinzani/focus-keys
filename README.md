@@ -49,9 +49,10 @@ npm run glyphs       # regenerates src/render/glyphs.generated.ts and the font l
 - `src/core/key-style.ts` validates each key's color and font settings.
 - `src/render/key-image.ts` draws a key as SVG: a large whole-minute number, plus a ring while running (key color) or paused (muted, frozen). Digits are drawn as path outlines from `src/render/glyphs.generated.ts`, so the look doesn't depend on fonts installed on the Mac.
 - `src/core/alerts.ts` validates the shared alert settings and decides what a completion does: which sound, and whether to show a notification with what text.
-- `src/actions/preset-controller.ts` wires everything without the SDK, so it is tested directly. It sends key events to the coordinator, paints its renders, passes its events to the alert dispatcher, and through `src/actions/wake-timer.ts` wakes at the exact moment the coordinator reports the next change: a ring step, a minute boundary, completion, or a hold reaching its threshold.
+- `src/actions/preset-controller.ts` wires everything without the SDK, so it is tested directly. It sends key events to the coordinator, paints its renders, passes its events to the alert and Focus dispatchers, saves every change to the state store, catches up after a restart (`recover`), redraws every key when a Stream Deck reconnects, and through `src/actions/wake-timer.ts` wakes at the exact moment the coordinator reports the next change: a ring step, a minute boundary, completion, or a hold reaching its threshold.
 - `src/alerts/dispatcher.ts` turns each `completed` event into a sound and/or notification, once per session. `src/alerts/macos.ts` plays sounds with `afplay` and shows notifications with `osascript`.
 - `src/core/focus.ts` validates the shared Focus settings and maps each session event to a Focus start or end. `src/focus/dispatcher.ts` runs the user's Focus shortcuts in order, at most one start and one end per focus session. `src/focus/shortcuts.ts` runs and lists shortcuts with `/usr/bin/shortcuts`; `src/focus/picker.ts` fills the Property Inspector's shortcut pickers. `src/focus/status.ts` keeps the Property Inspector's last-Focus-problem line.
+- `src/persistence/store.ts` saves the session, the session-id counter, the alert delivery record and the Focus record to `~/Library/Application Support/com.austinzani.neo-pomodoro/state.json` (see "Restart and sleep recovery").
 - `src/actions/preset-timer.ts` is the Stream Deck adapter. It forwards SDK key and settings events to the controller, paints keys with `setImage`, and reads the alert settings from the plugin's global settings.
 - `com.austinzani.neo-pomodoro.sdPlugin/ui/preset.html` is the Property Inspector. It uses [sdpi-components](https://sdpi-components.dev) v4.0.1, vendored in `ui/vendor/` so it works offline; its MIT and bundled Lit BSD-3-Clause licenses are in `ui/vendor/LICENSES.md`.
 
@@ -137,7 +138,49 @@ Five number fonts, all under the SIL Open Font License 1.1 with no Reserved Font
 
 ### Clock-change policy
 
-The session tracks an absolute wall-clock end time. Forward clock jumps, including sleep, count as elapsed time. Backward jumps extend the session, but the key never shows more than the preset minutes or more than a full ring. The final policy may be refined in AUS-1884.
+The session tracks an absolute wall-clock end time. Forward clock jumps, including sleep, count as elapsed time. Backward jumps extend the session, but the key never shows more than the preset minutes or more than a full ring. The same rule holds across a restart, because the saved session is its absolute end time: time the plugin or the Mac spent stopped or asleep counts, and a clock set back while it was stopped extends the session the same way.
+
+### Restart and sleep recovery
+
+The plugin saves its state on every session change (start, pause, resume, cancel, completion, replacement, clearing a finished key) and when it delivers an alert, in `~/Library/Application Support/com.austinzani.neo-pomodoro/state.json`. That file lives outside the plugin folder, so it survives plugin updates and reinstalls; it holds only the session (key, duration, end time or remaining time), the last session id, the last alerted session id, and the session this plugin turned Focus on for (0 if none). The format is versioned (currently 1). A file this version can't use (corrupt, from another version, or unreadable) is moved aside to `state.unsupported-<time>.json` in the same folder, with a warning in the log naming it, and the timer starts idle and saves as usual; see Troubleshooting below if it can't be moved. It is written atomically: a temporary file is flushed, then renamed over the old one; temporary files left by a crash mid-write are deleted at startup. A change made in the same instant as quitting Stream Deck may be lost; the previously saved state is used next time. It is not kept in Stream Deck's global settings, because the Property Inspector rewrites that whole object when you change alert or Focus settings.
+
+- After a restart (plugin, Stream Deck or Mac), a running session keeps counting from its original end time, and a paused one stays paused with the time it had left.
+- A session that ended while the plugin was stopped or the Mac was asleep shows 0 on its key and plays its alert once, as soon as the plugin is running again (on wake, or once it has started and connected to Stream Deck). A Mac can't be counted on to play a sound while asleep or while the plugin is stopped.
+- Alerts are delivered at most once: the delivery is saved before the sound or notification starts. If the plugin crashes in the moment between saving and alerting, that alert is skipped rather than repeated. If the save fails or takes longer than 2 seconds, the alert plays anyway; it could then repeat after a quit, crash or restart that comes before the next successful save. Repeated wake or restart events never repeat an alert.
+- Focus switches are never repeated either. The plugin saves which session it turned Focus on for before **On start** runs, and clears that record before **On end** runs. A session restored running doesn't run **On start** again; when it pauses, is cancelled or finishes, **On end** runs once. If the plugin had turned Focus on and that work is no longer running when the plugin comes back (it finished while stopped or asleep, or was paused or cancelled just before a crash), **On end** runs once on recovery. A crash in the moment between saving and running a shortcut skips that end rather than repeating it; an interrupted start counts as started, so its end still runs. If that save fails, the shortcut runs anyway, with the same repeat caveat as alerts.
+- **Recovery can't see manual Focus changes.** Reading the current Focus (Shortcuts' **Get Current Focus**) is not yet proven reliable (see Focus › Limits and the owner prototype), so the recovery rule is the same as for a timer that finishes while you watch: **On end** runs once, even after a long sleep or overnight shutdown, and even if you changed Focus by hand meanwhile. The alternative, skipping **On end** after a long gap, would leave your work Focus on indefinitely with no timer running. Choose **Leave Focus as it is** for **On end** if you'd rather the plugin never touch Focus at the end.
+- **Page and profile changes** redraw a key from the current state when it appears again: a session that finished meanwhile shows 0 (and alerted on time).
+- **Unplugging the Neo** doesn't stop the timer. A session that finishes while it's unplugged alerts once on time; reconnecting redraws every visible key from the current state (0 for a finished session).
+- **Deleting a running key doesn't stop the timer.** Stream Deck reports a deleted key exactly like a key that's on another page (there is no separate "removed" event), so the session carries on, finishes, and alerts once; its 0 just has no key to show on. Pressing any other timer key starts a fresh session (replacing a running or paused one, as usual). To stop a timer for good, hold its key to cancel before deleting it. A paused session on a deleted key stays paused, invisibly, until another key starts.
+- The saved key id is the Stream Deck action id, assumed stable for the same placed key across restarts (owner check below).
+- An unusable state file is moved aside and logged, and the timer starts idle (see above). A failed save is logged and retried with the next change; it never stops the timer.
+
+#### Troubleshooting: state file
+
+- **`moved it to …state.unsupported-….json` warning.** The saved file couldn't be used, so it was kept under that name and the timer started idle. Nothing else is needed; delete the backup once you no longer need it.
+- **`won't be saved this run` error at startup.** The state file couldn't be read or used, and couldn't be moved aside either (usually permissions on `~/Library/Application Support/com.austinzani.neo-pomodoro/` or the file, or `state.json` being a folder). The file is left as it is and the plugin runs without saving: timers, alerts and Focus work, but a restart starts idle and a completion missed while stopped isn't alerted. Alerts don't log a save failure each time in this mode; that one startup line is the only report. To fix, quit Stream Deck, make the folder writable by your user (or move the file out of it), and reopen.
+
+### Real-device checklist: recovery (AUS-1884)
+
+Use short presets (1–2 minutes) and the completion sound on. Watch the plugin log (`com.austinzani.neo-pomodoro.sdPlugin/logs/`) for `restored session …`, `session {…}` and `alert session=…` lines. Each "one alert" below means one sound and at most one banner, never two.
+
+State file: `~/Library/Application Support/com.austinzani.neo-pomodoro/state.json`. To reset, quit Stream Deck, delete that file (or its folder), and reopen Stream Deck; the timer starts idle. Nothing else is stored there.
+
+1. **Sleep through completion.** Start a 1-minute key, close the lid (or Apple menu › Sleep) for 3 minutes, wake. The key shows **0** within a second or two of waking, and one alert plays.
+2. **Sleep mid-session.** Start a 5-minute key, sleep 2 minutes, wake. The key shows **3** (time asleep counted), and finishes on time with one alert.
+3. **Repeated wake.** Start a 1-minute key, sleep and wake three times in quick succession across the completion. One alert in total.
+4. **Quit mid-session.** Start a 5-minute key, wait 1 minute, quit Stream Deck (menu bar › Quit), wait 2 minutes, reopen. The key shows **2** and keeps counting from the original end; one alert at the end. Repeat with a paused key: it comes back paused with the same minutes.
+5. **Quit through completion.** Start a 1-minute key, quit Stream Deck, wait 2 minutes, reopen. The key shows **0** and one alert plays shortly after launch. Quit and reopen twice more: no further alerts, still **0**.
+6. **Restart macOS** mid-session and through a completion (as 4 and 5). Same results once Stream Deck is running again.
+7. **Unplug/replug the Neo** mid-session and through a completion. While unplugged the alert still plays on time; after replugging, the keys show the current minutes (or **0**).
+8. **Page/profile switch.** Start a key, switch to another page or profile until the session finishes, switch back. The alert played on time; the key shows **0**.
+9. **Deleted key.** Start a 1-minute key and delete it from the Stream Deck app. The alert still plays once at the end. Press another timer key: it starts normally.
+10. **Key identity.** Start a key, quit and reopen Stream Deck; the same physical key (not another one) continues the countdown. If another key shows it, or none does, report it: the saved key id isn't stable.
+11. **Focus enabled** (with your On start/On end shortcuts from the Focus section):
+    - Quit Stream Deck mid-session and reopen: **On start** does not run again. When the session finishes, **On end** runs once.
+    - Quit through completion and reopen (or sleep through it and wake): **On end** runs once on recovery; repeated relaunches or wakes run nothing more.
+    - Change Focus by hand during a session, then sleep through its completion: on wake **On end** still runs once (expected; manual changes aren't detected).
+12. **Bad state file.** Quit Stream Deck, replace `state.json` with `garbage`, reopen. The log shows a warning `Saved timer state is not valid JSON; moved it to …/state.unsupported-….json and starting clean`, keys are idle, and starting a timer works. Delete the backup afterwards.
 
 ### Owner check on the Neo (AUS-1879, AUS-1880)
 
@@ -168,7 +211,7 @@ Do this on the physical Neo at normal viewing distance. Compare against the cont
 5. Run `npm run restart` or reopen Stream Deck. Every key keeps its color and font.
 6. Note any font or color that's hard to read on the Neo, so it can be swapped before release.
 
-Notes: the action has no title field, so a user title can't hide the number. A custom image set on the key in the Stream Deck app still overrides the plugin's image. If the number doesn't appear, clear any custom image on that key. A running session isn't restored after a restart yet; that's AUS-1884.
+Notes: the action has no title field, so a user title can't hide the number. A custom image set on the key in the Stream Deck app still overrides the plugin's image. If the number doesn't appear, clear any custom image on that key.
 
 ### Focus
 
@@ -197,7 +240,7 @@ Each focus session runs **On start** at most once and **On end** at most once. E
 Limits:
 
 - **Your previous Focus is not restored.** At the end the plugin runs your **On end** shortcut (or leaves Focus alone). Apple documents **Get Current Focus** (macOS 13) only as "checking current Focus status". It has not yet been shown on this Mac that it returns a Focus that can be fed back into **Set Focus**, or how "no Focus" looks. Restoring stays off until the owner prototype below proves it.
-- **Changes you make by hand aren't detected.** If you switch Focus during a timer, **On end** still runs when the timer pauses or finishes, and it may undo your change. Whether a "Focus off" shortcut also turns off a different Focus you chose by hand is not yet tested (prototype Q5). The plugin can't tell a scheduled change from a manual one. Choose **Leave Focus as it is** to avoid this.
+- **Changes you make by hand aren't detected.** If you switch Focus during a timer, **On end** still runs when the timer pauses or finishes, and it may undo your change. The same goes for recovery: a timer that finished while the Mac slept or Stream Deck was closed runs **On end** once when the plugin is back (see Restart and sleep recovery). Whether a "Focus off" shortcut also turns off a different Focus you chose by hand is not yet tested (prototype Q5). The plugin can't tell a scheduled change from a manual one. Choose **Leave Focus as it is** to avoid this.
 - **On end needs On start.** **On end** runs only if this focus session's **On start** finished successfully or hit the 30-second limit (a shortcut stopped at the limit may already have set Focus, so it counts as started). It doesn't run when **On start** is **None**, switching was off at the start, the start shortcut was missing or failed with an error, or the settings couldn't be read at the start.
 - **Shortcut names are trimmed.** A shortcut whose name starts or ends with spaces can't be chosen; rename it in the Shortcuts app.
 - **The "No shortcut named …" message relies on the `shortcuts` command's English error text** ("Couldn't find shortcut"). In another macOS language a missing shortcut is reported with the command's own error instead.

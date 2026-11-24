@@ -1,8 +1,9 @@
 /** Shared test helpers (not a test file). */
 import { readFileSync } from "node:fs";
 
-import { AlertDispatcher } from "../src/alerts/dispatcher";
+import { type AlertPorts, AlertDispatcher } from "../src/alerts/dispatcher";
 import type { AlertSettings, SoundId } from "../src/core/alerts";
+import type { StateStorage } from "../src/persistence/store";
 
 /** The Property Inspector (PI) page's HTML source. */
 export function piSource(): string {
@@ -70,7 +71,7 @@ export function runPiScript() {
 }
 
 /** Records what the alert would have done on the Mac; a part can be made to fail. */
-export function fakeAlertPorts(settings: AlertSettings | Error = {}) {
+export function fakeAlertPorts(settings: AlertSettings | Error = {}, delivery?: AlertPorts["delivery"]) {
 	const played: SoundId[] = [];
 	const notified: { title: string; body: string }[] = [];
 	const errors: string[] = [];
@@ -82,6 +83,38 @@ export function fakeAlertPorts(settings: AlertSettings | Error = {}) {
 			notify: async (title, body) => (failing.notify ? Promise.reject(new Error("osascript exited 1")) : void notified.push({ title, body })),
 		},
 		log: { info: () => {}, error: (msg) => void errors.push(msg) },
+		delivery,
 	});
 	return { dispatcher, played, notified, errors, failing };
+}
+
+/**
+ * Storage in memory; reads, writes and moving the file aside can be made to fail, and writes can be held
+ * open. `backups` holds the text of every file moved aside.
+ */
+export function memoryStorage(initial?: string) {
+	const writes: string[] = [];
+	const backups: (string | undefined)[] = [];
+	let text = initial;
+	const gate = { hold: false, fail: false, readFail: false, moveFail: false, release: () => {} };
+	const storage: StateStorage = {
+		read: async () => {
+			if (gate.readFail) throw new Error("EACCES: permission denied, open 'state.json'");
+			return text;
+		},
+		write: async (next) => {
+			if (gate.hold) await new Promise<void>((resolve) => (gate.release = resolve));
+			if (gate.fail) throw new Error("EACCES: permission denied");
+			writes.push(next);
+			text = next;
+		},
+		moveAside: async () => {
+			if (gate.moveFail) throw new Error("EACCES: permission denied, rename");
+			backups.push(text);
+			text = undefined;
+			gate.readFail = false;
+			return `/saved/state.unsupported-${backups.length}.json`;
+		},
+	};
+	return { storage, writes, backups, gate, text: () => text };
 }

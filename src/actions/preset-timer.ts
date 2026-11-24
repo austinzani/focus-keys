@@ -20,6 +20,7 @@ import { FocusDispatcher } from "../focus/dispatcher";
 import { answerShortcutPicker } from "../focus/picker";
 import { ShortcutsCli } from "../focus/shortcuts";
 import { FocusStatus } from "../focus/status";
+import type { StateStore } from "../persistence/store";
 import { keyImageDataUrl } from "../render/key-image";
 import { PresetController } from "./preset-controller";
 
@@ -30,7 +31,8 @@ export const PRESET_ACTION_UUID = "com.austinzani.neo-pomodoro.preset";
  * renders with setImage. Each key's duration, color and font are action settings the SDK persists; the
  * completion alert and Focus preferences are plugin global settings shared by every key, read when used.
  * A failed Focus shortcut shows the key's alert and is reported in the Property Inspector's Focus section
- * until a shortcut runs or the Focus settings change.
+ * until a shortcut runs or the Focus settings change. The timer session and alert delivery record are
+ * saved in the plugin's state file (`store`), loaded before this action is created.
  */
 @action({ UUID: PRESET_ACTION_UUID })
 export class PresetTimerAction extends SingletonAction<PresetSettings> {
@@ -38,37 +40,50 @@ export class PresetTimerAction extends SingletonAction<PresetSettings> {
 	readonly #shortcuts = new ShortcutsCli();
 	/** The latest Focus problem, shown in the open Property Inspector. */
 	readonly #focusStatus = new FocusStatus((status) => this.#sendToInspector(status));
-	readonly #controller = new PresetController({
-		clock: systemClock,
-		paint: (render) => {
-			const key = this.#keys.get(render.keyId);
-			key?.setImage(keyImageDataUrl(render)).catch((err: unknown) => streamDeck.logger.error("setImage failed", err));
-		},
-		alerts: new AlertDispatcher({
-			loadSettings: () => streamDeck.settings.getGlobalSettings(),
-			sound: new AfplaySoundPlayer(),
-			notifier: new OsascriptNotifier(),
-			log: streamDeck.logger,
-		}),
-		focus: new FocusDispatcher({
-			loadSettings: () => streamDeck.settings.getGlobalSettings(),
-			shortcuts: this.#shortcuts,
-			reportFailure: (keyId, message) => {
-				this.#keys.get(keyId)?.showAlert().catch((err: unknown) => streamDeck.logger.error("showAlert failed", err));
-				this.#focusStatus.failed(`${new Date().toLocaleTimeString()}: ${message}`);
-			},
-			reportSuccess: () => this.#focusStatus.succeeded(),
-			log: streamDeck.logger,
-		}),
-		log: streamDeck.logger,
-	});
+	readonly #controller: PresetController;
 
-	constructor() {
+	constructor(store: StateStore) {
 		super();
+		this.#controller = new PresetController({
+			clock: systemClock,
+			paint: (render) => {
+				const key = this.#keys.get(render.keyId);
+				key?.setImage(keyImageDataUrl(render)).catch((err: unknown) => streamDeck.logger.error("setImage failed", err));
+			},
+			alerts: new AlertDispatcher({
+				loadSettings: () => streamDeck.settings.getGlobalSettings(),
+				sound: new AfplaySoundPlayer(),
+				notifier: new OsascriptNotifier(),
+				log: streamDeck.logger,
+				// None when this run can't save (logged once at startup), so alerts don't each report a failed save.
+				delivery: store.alertDelivery(),
+			}),
+			focus: new FocusDispatcher({
+				loadSettings: () => streamDeck.settings.getGlobalSettings(),
+				shortcuts: this.#shortcuts,
+				reportFailure: (keyId, message) => {
+					this.#keys.get(keyId)?.showAlert().catch((err: unknown) => streamDeck.logger.error("showAlert failed", err));
+					this.#focusStatus.failed(`${new Date().toLocaleTimeString()}: ${message}`);
+				},
+				reportSuccess: () => this.#focusStatus.succeeded(),
+				log: streamDeck.logger,
+				record: store.focusRecord(),
+			}),
+			log: streamDeck.logger,
+			store,
+		});
 		// Timers can fire late after sleep; redraw from the absolute end time as soon as the Mac wakes.
 		streamDeck.system.onSystemDidWakeUp(() => this.#controller.wake());
+		// Reconnecting the Neo redraws its keys from the current state; while it is unplugged the timer keeps going.
+		streamDeck.devices.onDeviceDidConnect(() => this.#controller.deviceConnected());
+		streamDeck.devices.onDeviceDidDisconnect(() => this.#controller.deviceDisconnected());
 		// Fired only when the Property Inspector changes the shared settings (not on getGlobalSettings).
 		streamDeck.settings.onDidReceiveGlobalSettings((ev) => this.#focusStatus.settingsChanged(ev.settings));
+	}
+
+	/** Catches up once connected to Stream Deck: completes and alerts a session that ended while the plugin was stopped. */
+	recover(): void {
+		this.#controller.recover();
 	}
 
 	override onWillAppear(ev: WillAppearEvent<PresetSettings>): void {

@@ -23,6 +23,12 @@ export type AlertPorts = {
 	sound: SoundPlayer;
 	notifier: Notifier;
 	log: Log;
+	/**
+	 * Delivery bookkeeping saved across restarts: the newest session already alerted, and how to record a
+	 * new one. `markAlerted` resolves true once the record is saved, false if saving failed; it is awaited
+	 * (up to SAVE_TIMEOUT_MS) before alerting.
+	 */
+	delivery?: { lastAlertedSessionId: number; markAlerted(sessionId: number): Promise<boolean> };
 };
 
 type CompletedEvent = Extract<SessionEvent, { type: "completed" }>;
@@ -31,18 +37,25 @@ type CompletedEvent = Extract<SessionEvent, { type: "completed" }>;
  * Turns `completed` session events into a sound and/or notification, at most once per session id, using
  * the shared settings as they are when the session completes. Every failure is logged and swallowed: an
  * alert never affects the timer.
+ *
+ * At most once across restarts too: the delivery is saved (`delivery.markAlerted`) before the sound or
+ * notification starts, so a crash or quit mid-alert loses that alert rather than repeating it. If the save
+ * fails or takes over SAVE_TIMEOUT_MS the alert still plays; only a crash before the save lands could then repeat it.
  */
 export class AlertDispatcher {
 	/** How long to wait for the shared settings before alerting with the defaults. */
 	static readonly SETTINGS_TIMEOUT_MS = 2_000;
+	/** How long an alert waits for its delivery to be saved before playing anyway. */
+	static readonly SAVE_TIMEOUT_MS = 2_000;
 	/**
-	 * The coordinator's session ids increase within a process, so remembering the latest alerted one dedupes repeats.
-	 * Both reset when the plugin restarts: AUS-1884 (restoring sessions) must persist or seed the session id, or
-	 * persist a delivery marker, to dedupe across restarts.
+	 * The coordinator's session ids only increase (it is seeded from the saved state after a restart), so
+	 * remembering the latest alerted one dedupes repeats; it starts from the saved delivery record.
 	 */
-	#lastAlertedSessionId = 0;
+	#lastAlertedSessionId: number;
 
-	constructor(private readonly ports: AlertPorts) {}
+	constructor(private readonly ports: AlertPorts) {
+		this.#lastAlertedSessionId = ports.delivery?.lastAlertedSessionId ?? 0;
+	}
 
 	/** Resolves once every alert for these events has been attempted. Never rejects. */
 	async handle(events: readonly SessionEvent[]): Promise<void> {
@@ -50,12 +63,24 @@ export class AlertDispatcher {
 		for (const event of events) {
 			if (event.type !== "completed" || event.sessionId <= this.#lastAlertedSessionId) continue;
 			this.#lastAlertedSessionId = event.sessionId;
-			alerts.push(this.#alert(event));
+			alerts.push(this.#alert(event, this.#markAlerted(event.sessionId)));
 		}
 		await Promise.all(alerts);
 	}
 
-	async #alert(event: CompletedEvent): Promise<void> {
+	/** Saves the delivery; settles (never rejects) once saved, failed or timed out. */
+	async #markAlerted(sessionId: number): Promise<void> {
+		try {
+			const delivery = this.ports.delivery;
+			if (delivery === undefined) return;
+			const saved = await withTimeout(delivery.markAlerted(sessionId), AlertDispatcher.SAVE_TIMEOUT_MS);
+			if (!saved) this.ports.log.error(`Could not save the alert for session ${sessionId} as delivered; alerting anyway`);
+		} catch (err) {
+			this.ports.log.error(`Could not save the alert for session ${sessionId} as delivered; alerting anyway`, err);
+		}
+	}
+
+	async #alert(event: CompletedEvent, marked: Promise<void>): Promise<void> {
 		const { log } = this.ports;
 		let settings: AlertSettings | undefined;
 		try {
@@ -63,6 +88,7 @@ export class AlertDispatcher {
 		} catch (err) {
 			log.error("Could not read alert settings; using defaults", err);
 		}
+		await marked;
 		const plan = planAlert(parseAlertPrefs(settings), event.durationMs);
 		log.info(`alert session=${event.sessionId} sound=${plan.sound ?? "none"} notification=${plan.notification !== undefined}`);
 		await Promise.all([

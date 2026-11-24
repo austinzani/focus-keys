@@ -749,3 +749,102 @@ describe("key appearance", () => {
 		expect(t.coordinator.settingsChanged("key-a", { color: "#1E90FF", font: "nunito" })).toEqual({ renders: [], events: [] });
 	});
 });
+
+describe("restoring a session after a restart", () => {
+	/** Runs a session in one coordinator, then hands its snapshot to a fresh one on the same clock. */
+	function restart(t: ReturnType<typeof setup>) {
+		const coordinator = new TimerCoordinator(t.clock, t.coordinator.snapshot());
+		const display = new Map<string, KeyRender>();
+		const events: SessionEvent[] = [];
+		const apply = (out: Output) => {
+			for (const r of out.renders) display.set(r.keyId, r);
+			events.push(...out.events);
+		};
+		return { coordinator, display, events, apply };
+	}
+
+	it("keeps counting a running session down from its original end time", () => {
+		const t = setup();
+		t.appear("key-a", { durationMinutes: 25 });
+		t.press("key-a");
+		t.clock.advance(10 * MIN);
+		const r = restart(t);
+		r.apply(r.coordinator.keyAppeared("key-a", { durationMinutes: 25 }));
+		expect(r.display.get("key-a")).toMatchObject({ state: "running", minutes: 15 });
+		expect(r.events).toEqual([]);
+		expect(r.coordinator.nextChangeAt()).toBeGreaterThan(t.clock.now());
+	});
+
+	it("completes a session whose end passed while the plugin was stopped, once, showing 0", () => {
+		const t = setup();
+		t.appear("key-a", { durationMinutes: 5 });
+		t.appear("key-b", { durationMinutes: 15 });
+		const started = t.events.length;
+		t.press("key-a");
+		const sessionId = t.events[started].sessionId;
+		t.clock.advance(60 * MIN);
+		const r = restart(t);
+		r.apply(r.coordinator.tick());
+		expect(r.events).toEqual([{ type: "completed", keyId: "key-a", sessionId, durationMs: 5 * MIN }]);
+		r.apply(r.coordinator.keyAppeared("key-a", { durationMinutes: 5 }));
+		r.apply(r.coordinator.keyAppeared("key-b", { durationMinutes: 15 }));
+		expect(r.display.get("key-a")).toMatchObject({ state: "done", minutes: 0 });
+		expect(r.display.get("key-b")).toMatchObject({ state: "idle", minutes: 15 });
+		r.apply(r.coordinator.tick());
+		expect(r.events).toHaveLength(1);
+	});
+
+	it("restores a paused session with its frozen remaining time", () => {
+		const t = setup();
+		t.appear("key-a", { durationMinutes: 25 });
+		t.press("key-a");
+		t.clock.advance(5 * MIN);
+		t.press("key-a");
+		t.clock.advance(120 * MIN);
+		const r = restart(t);
+		r.apply(r.coordinator.keyAppeared("key-a", { durationMinutes: 25 }));
+		expect(r.display.get("key-a")).toMatchObject({ state: "paused", minutes: 20 });
+		r.apply(r.coordinator.keyDown("key-a"));
+		r.apply(r.coordinator.keyUp("key-a"));
+		expect(r.events).toMatchObject([{ type: "resumed", keyId: "key-a" }]);
+		expect(r.display.get("key-a")).toMatchObject({ state: "running", minutes: 20 });
+	});
+
+	it("never reuses a session id from before the restart", () => {
+		const t = setup();
+		t.appear("key-a", { durationMinutes: 5 });
+		t.press("key-a");
+		const before = t.events.at(-1)!.sessionId;
+		const r = restart(t);
+		r.apply(r.coordinator.keyAppeared("key-b", { durationMinutes: 5 }));
+		r.apply(r.coordinator.keyDown("key-b"));
+		r.apply(r.coordinator.keyUp("key-b"));
+		expect(r.events.at(-1)).toMatchObject({ type: "replaced", keyId: "key-b" });
+		expect(r.events.at(-1)!.sessionId).toBeGreaterThan(before);
+	});
+
+	it("with the clock set back across the restart, shows at most the preset and completes once the clock catches up", () => {
+		const t = setup();
+		t.appear("key-a", { durationMinutes: 5 });
+		t.press("key-a");
+		t.clock.advance(-60 * MIN);
+		const r = restart(t);
+		r.apply(r.coordinator.keyAppeared("key-a", { durationMinutes: 5 }));
+		expect(r.display.get("key-a")).toMatchObject({ state: "running", minutes: 5, ring: 1 });
+		t.clock.advance(60 * MIN + 5 * MIN);
+		r.apply(r.coordinator.tick());
+		expect(r.events).toMatchObject([{ type: "completed", keyId: "key-a" }]);
+	});
+
+	it("restores a finished session as done without reporting it again", () => {
+		const t = setup();
+		t.appear("key-a", { durationMinutes: 1 });
+		t.press("key-a");
+		t.clock.advance(MIN);
+		t.apply(t.coordinator.tick());
+		const r = restart(t);
+		r.apply(r.coordinator.keyAppeared("key-a", { durationMinutes: 1 }));
+		expect(r.display.get("key-a")).toMatchObject({ state: "done", minutes: 0 });
+		expect(r.events).toEqual([]);
+	});
+});

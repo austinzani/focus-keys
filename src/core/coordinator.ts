@@ -17,7 +17,7 @@ export type KeyRender = (
 
 /**
  * Session transitions, reported once each, for alert and Focus integrations to hook into. `completed`
- * carries the session's id (increasing with each start, within this process) so its alert can be delivered once.
+ * carries the session's id (increasing with each start, also across restarts when restored from a snapshot) so its alert can be delivered once.
  * Replacing a running or paused session with another preset reports only `replaced`, never `completed` or
  * `cancelled`; `replaced` also starts the new session, so treat it as a start for `keyId`.
  */
@@ -43,9 +43,9 @@ const MINUTE_MS = 60_000;
 /**
  * The single shared session. Running stores its absolute end time, never a decrementing counter;
  * paused stores the frozen remaining time. `id` is unique per start and kept through pause, resume
- * and completion.
+ * and completion. Plain data, so it can be saved and restored across restarts.
  */
-type Session = { id: number; keyId: string; durationMs: number } & (
+export type Session = { id: number; keyId: string; durationMs: number } & (
 	| { status: "running"; endsAt: number }
 	| { status: "paused"; remainingMs: number }
 	| { status: "completed" }
@@ -57,6 +57,12 @@ type Session = { id: number; keyId: string; durationMs: number } & (
  * does nothing if that has since changed, e.g. the session completed or was replaced before release.
  */
 type Press = { keyId: string; downAt: number; resolved: boolean; pressed: SessionMark | undefined };
+
+/**
+ * What survives a restart: the session as it was, and the latest session id handed out, so a restarted
+ * plugin never reuses an id (alert and Focus bookkeeping dedupe by id).
+ */
+export type CoordinatorSnapshot = { lastSessionId: number; session: Session | undefined };
 
 type SessionMark = { id: number; status: Session["status"] };
 
@@ -76,7 +82,22 @@ export class TimerCoordinator {
 	#lastSessionId = 0;
 	#events: SessionEvent[] = [];
 
-	constructor(private readonly clock: Clock) {}
+	/**
+	 * `restored` resumes a session saved before a restart. A running session keeps its original end time,
+	 * so time spent asleep or stopped counts down; one that ended meanwhile completes on the next call.
+	 */
+	constructor(
+		private readonly clock: Clock,
+		restored?: CoordinatorSnapshot,
+	) {
+		this.#session = restored?.session;
+		this.#lastSessionId = Math.max(restored?.lastSessionId ?? 0, restored?.session?.id ?? 0);
+	}
+
+	/** The state to save so a restart can pick up where this left off. */
+	snapshot(): CoordinatorSnapshot {
+		return { lastSessionId: this.#lastSessionId, session: this.#session === undefined ? undefined : { ...this.#session } };
+	}
 
 	/** A key became visible. An unusable duration falls back to the default. */
 	keyAppeared(keyId: string, settings: PresetSettings): Output {
@@ -113,6 +134,12 @@ export class TimerCoordinator {
 
 	/** Re-evaluates every visible key against the current clock time, including pending holds. */
 	tick(): Output {
+		return this.#output();
+	}
+
+	/** Like `tick`, but renders every visible key even if unchanged, for a device that may have lost its images. */
+	redrawAll(): Output {
+		this.#shown.clear();
 		return this.#output();
 	}
 
