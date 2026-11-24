@@ -1,4 +1,6 @@
+import { DEFAULT_FONT, KEY_BACKGROUND, mix, toHex, toRgb } from "../core/key-style";
 import type { KeyRender } from "../core/coordinator";
+import { GLYPH_FONTS, type GlyphFont } from "./glyphs.generated";
 
 /** Key canvas in px; Stream Deck scales it to the device (72 px, 144 px @2x). */
 const SIZE = 144;
@@ -6,37 +8,50 @@ const CENTER = SIZE / 2;
 const RING_RADIUS = 62;
 const RING_WIDTH = 8;
 const CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+/** The number's ink box stays inside this radius, 4 px within the ring's inner edge so wide numbers don't crowd it. */
+const NUMBER_RADIUS = RING_RADIUS - RING_WIDTH / 2 - 4;
+/** Digits are never taller than this, in px; wider numbers are sized down to fit inside NUMBER_RADIUS. */
+const MAX_DIGIT_HEIGHT = 62;
 
-const BACKGROUND = "#111111";
 const NUMBER_COLOR = "#f5f5f5";
-const RING_COLOR = "#ff6347";
-/** Muted grey for a paused session's frozen ring. */
-const PAUSED_RING_COLOR = "#6e6e6e";
+/** A paused key's number: dimmed, still well above 4.5:1 on the background. */
+const PAUSED_NUMBER_COLOR = "#a3a3a3";
+/** A paused ring is the key color mixed this far toward PAUSED_GREY. */
+const PAUSED_MUTE = 0.6;
+const PAUSED_GREY = "#5a5a5a";
 const RING_TRACK = "#2b2b2b";
-const FONT_FAMILY = "-apple-system, 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+/** Last resort only, when no digit outlines are available. */
+const FALLBACK_FONT_FAMILY = "-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 /**
- * Draws one key: a large centered whole-minute number on a dark background, plus a ring arc
- * covering the remaining fraction while running, frozen in muted grey while paused. Never shows seconds.
+ * Draws one key: a large centered whole-minute number on a dark background, plus a ring arc covering the
+ * remaining fraction while running, frozen in a muted shade while paused. Never shows seconds.
+ * Idle keys show their number in the key's color; running, paused and finished keys show it in white
+ * (dimmed while paused) so the colored ring carries the state.
+ * Digits are drawn from bundled font outlines, so the look never depends on fonts installed on the Mac.
  */
-export function renderKeySvg(render: KeyRender): string {
-	const text = String(render.minutes);
-	const fontSize = text.length >= 3 ? 52 : 72;
-	// Baseline offset instead of dominant-baseline, which some SVG renderers ignore.
-	const baseline = CENTER + fontSize * 0.35;
+export function renderKeySvg(render: KeyRender, fonts: Readonly<Record<string, GlyphFont>> = GLYPH_FONTS): string {
+	const { color } = render.style;
+	const numberColor = render.state === "idle" ? color : render.state === "paused" ? PAUSED_NUMBER_COLOR : NUMBER_COLOR;
+	const ringColor = render.state === "paused" ? toHex(mix(toRgb(color), toRgb(PAUSED_GREY), PAUSED_MUTE)) : color;
 
 	const ring =
 		render.state === "running" || render.state === "paused"
 			? `<circle cx="${CENTER}" cy="${CENTER}" r="${RING_RADIUS}" fill="none" stroke="${RING_TRACK}" stroke-width="${RING_WIDTH}"/>` +
-				`<circle data-role="progress" cx="${CENTER}" cy="${CENTER}" r="${RING_RADIUS}" fill="none" stroke="${render.state === "paused" ? PAUSED_RING_COLOR : RING_COLOR}" stroke-width="${RING_WIDTH}" ` +
+				`<circle data-role="progress" cx="${CENTER}" cy="${CENTER}" r="${RING_RADIUS}" fill="none" stroke="${ringColor}" stroke-width="${RING_WIDTH}" ` +
 				`stroke-dasharray="${fmt(CIRCUMFERENCE * render.ring)} ${fmt(CIRCUMFERENCE)}" transform="rotate(-90 ${CENTER} ${CENTER})"/>`
 			: "";
 
+	const text = String(render.minutes);
+	// The key's font, else the default font, else plain text: whichever first has every digit needed.
+	const font = [fonts[render.style.font], fonts[DEFAULT_FONT]].find((f) => f !== undefined && hasDigits(f, text));
+	const number = font !== undefined ? outlinedNumber(text, font, numberColor) : textNumber(text, numberColor);
+
 	return (
 		`<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}">` +
-		`<rect width="${SIZE}" height="${SIZE}" fill="${BACKGROUND}"/>` +
+		`<rect width="${SIZE}" height="${SIZE}" fill="${KEY_BACKGROUND}"/>` +
 		ring +
-		`<text x="${CENTER}" y="${fmt(baseline)}" text-anchor="middle" font-family="${FONT_FAMILY}" font-size="${fontSize}" font-weight="600" fill="${NUMBER_COLOR}">${text}</text>` +
+		number +
 		`</svg>`
 	);
 }
@@ -44,6 +59,49 @@ export function renderKeySvg(render: KeyRender): string {
 /** Stream Deck's documented form for SVG images passed to setImage. */
 export function keyImageDataUrl(render: KeyRender): string {
 	return `data:image/svg+xml,${encodeURIComponent(renderKeySvg(render))}`;
+}
+
+function hasDigits(font: GlyphFont, text: string): boolean {
+	return [...text].every((ch) => font.digits[ch] !== undefined);
+}
+
+/**
+ * Lays the digit outlines side by side, centered on the key by their ink (not advance widths), as large as
+ * fits: the ink box's corners touch the NUMBER_RADIUS circle, up to MAX_DIGIT_HEIGHT. Condensed fonts and
+ * short numbers therefore come out taller. Idle keys use the same size so the number doesn't jump on start.
+ */
+function outlinedNumber(text: string, font: GlyphFont, fill: string): string {
+	const glyphs = [...text].map((ch) => font.digits[ch]!);
+	const pens: number[] = [];
+	let pen = 0;
+	for (const g of glyphs) {
+		pens.push(pen);
+		pen += g.advance;
+	}
+	const inkLeft = glyphs[0]!.xMin;
+	const inkRight = pens.at(-1)! + glyphs.at(-1)!.xMax;
+	const inkWidth = inkRight - inkLeft;
+	const inkHeight = font.top - font.bottom;
+
+	const aspect = inkWidth / inkHeight;
+	const height = Math.min(MAX_DIGIT_HEIGHT, (2 * NUMBER_RADIUS) / Math.sqrt(1 + aspect ** 2));
+	const scale = height / inkHeight;
+
+	const x = CENTER - ((inkLeft + inkRight) / 2) * scale;
+	const baseline = CENTER + ((font.top + font.bottom) / 2) * scale;
+	const paths = glyphs.map((g, i) => `<path d="${g.d}"${pens[i] === 0 ? "" : ` transform="translate(${pens[i]} 0)"`}/>`).join("");
+	return `<g data-role="number" data-text="${text}" fill="${fill}" transform="translate(${fmt(x)} ${fmt(baseline)}) scale(${scale.toFixed(5)})">${paths}</g>`;
+}
+
+/** Plain text in a generic system font stack; only used if a digit has no bundled outline. */
+function textNumber(text: string, fill: string): string {
+	const fontSize = text.length >= 3 ? 52 : 72;
+	// Baseline offset instead of dominant-baseline, which some SVG renderers ignore.
+	const baseline = CENTER + fontSize * 0.35;
+	return (
+		`<g data-role="number" data-text="${text}" fill="${fill}">` +
+		`<text x="${CENTER}" y="${fmt(baseline)}" text-anchor="middle" font-family="${FALLBACK_FONT_FAMILY}" font-size="${fontSize}" font-weight="600">${text}</text></g>`
+	);
 }
 
 function fmt(n: number): string {

@@ -9,3 +9,6 @@ node_modules/
 *.streamDeckPlugin
 
 .DS_Store
+
+# Contact sheets from npm run preview
+preview/

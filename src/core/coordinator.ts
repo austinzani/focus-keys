@@ -1,16 +1,19 @@
+import { type KeyStyle, parseKeyStyle } from "./key-style";
 import type { Clock } from "./clock";
 
 /**
  * Per-key settings as stored by the Stream Deck action. The Property Inspector's text field saves strings,
- * so a duration may arrive as either a number or a numeric string.
+ * so a duration may arrive as either a number or a numeric string. `color` and `font` only change the key's look.
  */
-export type PresetSettings = { durationMinutes?: number | string };
+export type PresetSettings = { durationMinutes?: number | string; color?: string; font?: string };
 
-export type KeyRender =
+/** What one key should show. `style` is the key's own color and font, independent of the timer. */
+export type KeyRender = (
 	| { keyId: string; state: "idle"; minutes: number }
 	| { keyId: string; state: "running"; minutes: number; ring: number }
 	| { keyId: string; state: "paused"; minutes: number; ring: number }
-	| { keyId: string; state: "done"; minutes: 0 };
+	| { keyId: string; state: "done"; minutes: 0 }
+) & { style: KeyStyle };
 
 /**
  * Session transitions, reported once each, for alert and Focus integrations to hook into.
@@ -62,6 +65,8 @@ type SessionMark = { id: number; status: Session["status"] };
 export class TimerCoordinator {
 	/** Validated preset duration of each visible key, in minutes. */
 	readonly #durations = new Map<string, number>();
+	/** Validated color and font of each visible key. */
+	readonly #styles = new Map<string, KeyStyle>();
 	/** The render each visible key last received, so unchanged keys are not redrawn. */
 	readonly #shown = new Map<string, KeyRender>();
 	readonly #presses = new Map<string, Press>();
@@ -74,22 +79,27 @@ export class TimerCoordinator {
 	/** A key became visible. An unusable duration falls back to the default. */
 	keyAppeared(keyId: string, settings: PresetSettings): Output {
 		this.#durations.set(keyId, parseDuration(settings.durationMinutes) ?? DEFAULT_DURATION_MINUTES);
+		this.#styles.set(keyId, parseKeyStyle(settings));
 		this.#shown.delete(keyId);
 		return this.#output();
 	}
 
 	/**
 	 * A key's settings were edited. An unusable duration keeps the previous one. A session already
-	 * running or paused keeps its original duration; the new one applies from the next start.
+	 * running or paused keeps its original duration; the new one applies from the next start. A new color
+	 * or font redraws the key at once and never affects the session.
 	 */
 	settingsChanged(keyId: string, settings: PresetSettings): Output {
+		if (!this.#durations.has(keyId)) return this.#output();
 		const minutes = parseDuration(settings.durationMinutes);
-		if (minutes !== undefined && this.#durations.has(keyId)) this.#durations.set(keyId, minutes);
+		if (minutes !== undefined) this.#durations.set(keyId, minutes);
+		this.#styles.set(keyId, parseKeyStyle(settings));
 		return this.#output();
 	}
 
 	keyDisappeared(keyId: string): void {
 		this.#durations.delete(keyId);
+		this.#styles.delete(keyId);
 		this.#shown.delete(keyId);
 		this.#presses.delete(keyId);
 	}
@@ -229,15 +239,17 @@ export class TimerCoordinator {
 	}
 
 	#renderFor(keyId: string): KeyRender {
+		const style = this.#styles.get(keyId) ?? parseKeyStyle({});
 		const session = this.#session;
-		if (session?.keyId !== keyId) return { keyId, state: "idle", minutes: this.#durationMinutes(keyId) };
-		if (session.status === "completed") return { keyId, state: "done", minutes: 0 };
+		if (session?.keyId !== keyId) return { keyId, state: "idle", minutes: this.#durationMinutes(keyId), style };
+		if (session.status === "completed") return { keyId, state: "done", minutes: 0, style };
 		const remainingMs = session.status === "running" ? this.#remainingMs(session) : session.remainingMs;
 		return {
 			keyId,
 			state: session.status,
 			minutes: Math.ceil(remainingMs / MINUTE_MS),
 			ring: ringFraction(remainingMs, session.durationMs),
+			style,
 		};
 	}
 }
@@ -258,7 +270,14 @@ function sameMark(a: SessionMark | undefined, b: SessionMark | undefined): boole
 }
 
 function sameRender(a: KeyRender | undefined, b: KeyRender): boolean {
-	return a !== undefined && a.state === b.state && a.minutes === b.minutes && ringOf(a) === ringOf(b);
+	return (
+		a !== undefined &&
+		a.state === b.state &&
+		a.minutes === b.minutes &&
+		ringOf(a) === ringOf(b) &&
+		a.style.color === b.style.color &&
+		a.style.font === b.style.font
+	);
 }
 
 function ringOf(render: KeyRender): number | undefined {

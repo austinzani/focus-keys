@@ -23,6 +23,25 @@
 			></sdpi-textfield>
 		</sdpi-item>
 
+		<!--
+			KeyStyle only: changing these redraws the key at once and never affects a running or paused timer.
+			Very dark colors are lightened on the key so the ring and number stay visible.
+		-->
+		<sdpi-item label="Color">
+			<sdpi-color setting="color" default="#ff6347"></sdpi-color>
+		</sdpi-item>
+
+		<!-- Values must match FONT_IDS in src/core/key-style.ts. -->
+		<sdpi-item label="Font">
+			<sdpi-select setting="font" default="inter">
+				<option value="inter">Inter (default)</option>
+				<option value="nunito">Nunito (rounded)</option>
+				<option value="oswald">Oswald (condensed)</option>
+				<option value="jetbrains-mono">JetBrains Mono (monospace)</option>
+				<option value="bitter">Bitter (slab serif)</option>
+			</sdpi-select>
+		</sdpi-item>
+
 		<script>
 			// No `setting` attribute on the field: sdpi-textfield would save on every keystroke, so typing 60
 			// would briefly save 6. Instead the entry is saved when committed: on Enter, when the field loses

@@ -14,6 +14,8 @@ class ManualClock implements Clock {
 }
 
 const MIN = 60_000;
+/** What a key with no color or font settings is drawn with. */
+const DEFAULT_STYLE = { color: "#ff6347", font: "inter" };
 
 function setup() {
 	const clock = new ManualClock();
@@ -51,7 +53,7 @@ describe("idle preset key", () => {
 
 		const out = coordinator.keyAppeared("key-a", {});
 
-		expect(out.renders).toEqual([{ keyId: "key-a", state: "idle", minutes: 5 }]);
+		expect(out.renders).toEqual([{ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE }]);
 	});
 });
 
@@ -75,7 +77,7 @@ describe("pressing an idle key", () => {
 		coordinator.keyDown("key-a");
 		const out = coordinator.keyUp("key-a");
 
-		expect(out.renders).toEqual([{ keyId: "key-a", state: "running", minutes: 5, ring: 1 }]);
+		expect(out.renders).toEqual([{ keyId: "key-a", state: "running", minutes: 5, ring: 1, style: DEFAULT_STYLE }]);
 	});
 });
 
@@ -105,10 +107,10 @@ describe("completion", () => {
 		t.press("key-a");
 
 		t.elapse(5 * MIN);
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "done", minutes: 0 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "done", minutes: 0, style: DEFAULT_STYLE });
 
 		t.elapse(30 * MIN);
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "done", minutes: 0 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "done", minutes: 0, style: DEFAULT_STYLE });
 	});
 
 	it("shows 0 when the clock jumps well past the end (e.g. after sleep)", () => {
@@ -129,7 +131,7 @@ describe("completion", () => {
 
 		t.press("key-a");
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "running", minutes: 5, ring: 1 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "running", minutes: 5, ring: 1, style: DEFAULT_STYLE });
 		t.elapse(MIN);
 		expect(t.display.get("key-a")).toMatchObject({ state: "running", minutes: 4 });
 	});
@@ -178,7 +180,7 @@ describe("redraw scheduling", () => {
 		t.elapse(MIN - 1_000); // 4:01 remaining: next step lands on the 4:00 minute boundary
 		expect(t.coordinator.nextChangeAt()).toBe(start + MIN);
 		expect(t.elapse(999).renders).toEqual([]);
-		expect(t.elapse(1).renders).toEqual([{ keyId: "key-a", state: "running", minutes: 4, ring: 0.8 }]);
+		expect(t.elapse(1).renders).toEqual([{ keyId: "key-a", state: "running", minutes: 4, ring: 0.8, style: DEFAULT_STYLE }]);
 	});
 
 	it("asks to be woken at completion for the final step, then stops", () => {
@@ -215,7 +217,7 @@ describe("wall clock moving backward", () => {
 
 		t.elapse(-10 * MIN);
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "running", minutes: 5, ring: 1 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "running", minutes: 5, ring: 1, style: DEFAULT_STYLE });
 	});
 
 	it("extends the session: the countdown resumes from the preset once the clock catches up", () => {
@@ -228,7 +230,7 @@ describe("wall clock moving backward", () => {
 		// Display stays at the full preset until the original start time; the first change is one ring step later.
 		expect(t.coordinator.nextChangeAt()).toBe(start + 2_500);
 		expect(t.elapse(10 * MIN).renders).toEqual([]);
-		expect(t.elapse(MIN).renders).toEqual([{ keyId: "key-a", state: "running", minutes: 4, ring: 0.8 }]);
+		expect(t.elapse(MIN).renders).toEqual([{ keyId: "key-a", state: "running", minutes: 4, ring: 0.8, style: DEFAULT_STYLE }]);
 	});
 });
 
@@ -242,8 +244,8 @@ describe("one timer across keys", () => {
 
 		t.press("key-b");
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5 });
-		expect(t.display.get("key-b")).toEqual({ keyId: "key-b", state: "running", minutes: 15, ring: 1 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE });
+		expect(t.display.get("key-b")).toEqual({ keyId: "key-b", state: "running", minutes: 15, ring: 1, style: DEFAULT_STYLE });
 	});
 
 	it("shows the live countdown when a running key reappears (page or profile switch)", () => {
@@ -269,7 +271,7 @@ describe("tapping the active key", () => {
 
 		t.press("key-a");
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "paused", minutes: 4, ring: 0.7 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "paused", minutes: 4, ring: 0.7, style: DEFAULT_STYLE });
 		expect(t.events.at(-1)).toEqual({ type: "paused", keyId: "key-a" });
 	});
 });
@@ -286,7 +288,7 @@ describe("resuming a paused key", () => {
 		expect(t.elapse(60 * MIN).renders).toEqual([]);
 
 		t.press("key-a");
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "running", minutes: 4, ring: 0.7 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "running", minutes: 4, ring: 0.7, style: DEFAULT_STYLE });
 		expect(t.events.at(-1)).toEqual({ type: "resumed", keyId: "key-a" });
 
 		t.elapse(30_000 - 1);
@@ -294,7 +296,7 @@ describe("resuming a paused key", () => {
 		t.elapse(1);
 		expect(t.display.get("key-a")).toMatchObject({ minutes: 3 });
 		t.elapse(3 * MIN);
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "done", minutes: 0 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "done", minutes: 0, style: DEFAULT_STYLE });
 	});
 });
 
@@ -316,7 +318,7 @@ describe("holding a key", () => {
 
 		holdUntilWake(t, "key-a");
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 15 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 15, style: DEFAULT_STYLE });
 		expect(t.events.at(-1)).toEqual({ type: "cancelled", keyId: "key-a" });
 
 		const release = t.apply(t.coordinator.keyUp("key-a"));
@@ -346,7 +348,7 @@ describe("holding a key", () => {
 
 		t.apply(t.coordinator.keyUp("key-a"));
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE });
 		expect(t.events.map((e) => e.type)).toEqual(["started", "cancelled"]);
 	});
 
@@ -359,7 +361,7 @@ describe("holding a key", () => {
 		holdUntilWake(t, "key-a");
 		t.apply(t.coordinator.keyUp("key-a"));
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE });
 		expect(t.events.map((e) => e.type)).toEqual(["started", "completed"]);
 	});
 
@@ -374,7 +376,7 @@ describe("holding a key", () => {
 		expect(t.display.get("key-a")).toMatchObject({ state: "done" });
 		t.elapse(HOLD_MS - 300);
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE });
 		expect(t.events.map((e) => e.type)).toEqual(["started", "completed"]);
 	});
 
@@ -386,14 +388,14 @@ describe("holding a key", () => {
 		expect(t.coordinator.nextChangeAt()).toBeUndefined();
 		t.elapse(2_000);
 		t.apply(t.coordinator.keyUp("key-a"));
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE });
 
 		t.press("key-b");
 		t.apply(t.coordinator.keyDown("key-a"));
 		t.elapse(2_000);
 		t.apply(t.coordinator.keyUp("key-a"));
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE });
 		expect(t.display.get("key-b")).toMatchObject({ state: "running", minutes: 15 });
 		expect(t.events.map((e) => e.type)).toEqual(["started"]);
 	});
@@ -411,7 +413,7 @@ describe("selecting another preset", () => {
 		t.press("key-b");
 		t.elapse(5 * MIN); // well past where key-a would have finished
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE });
 		expect(t.display.get("key-b")).toMatchObject({ state: "running", minutes: 25 });
 		expect(t.events.at(-1)).toEqual({ type: "replaced", keyId: "key-b", durationMs: 30 * MIN, fromKeyId: "key-a", fromState: state });
 		expect(t.events.map((e) => e.type)).not.toContain("completed");
@@ -427,7 +429,7 @@ describe("selecting another preset", () => {
 
 		t.press("key-b");
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE });
 		expect(t.events.map((e) => e.type)).toEqual(["started", "completed", "started"]);
 	});
 });
@@ -454,10 +456,10 @@ describe("four presets", () => {
 		[5, 15, 30, 60].forEach((m, i) => t.appear(`key-${i}`, { durationMinutes: m }));
 
 		expect([0, 1, 2, 3].map((i) => t.display.get(`key-${i}`))).toEqual([
-			{ keyId: "key-0", state: "idle", minutes: 5 },
-			{ keyId: "key-1", state: "idle", minutes: 15 },
-			{ keyId: "key-2", state: "idle", minutes: 30 },
-			{ keyId: "key-3", state: "idle", minutes: 60 },
+			{ keyId: "key-0", state: "idle", minutes: 5, style: DEFAULT_STYLE },
+			{ keyId: "key-1", state: "idle", minutes: 15, style: DEFAULT_STYLE },
+			{ keyId: "key-2", state: "idle", minutes: 30, style: DEFAULT_STYLE },
+			{ keyId: "key-3", state: "idle", minutes: 60, style: DEFAULT_STYLE },
 		]);
 	});
 
@@ -488,7 +490,7 @@ describe("editing a key's duration", () => {
 
 		t.apply(t.coordinator.settingsChanged("key-a", { durationMinutes: 25 }));
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 25 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 25, style: DEFAULT_STYLE });
 	});
 
 	it("keeps the previous duration when the new value is unusable", () => {
@@ -497,7 +499,7 @@ describe("editing a key's duration", () => {
 
 		t.apply(t.coordinator.settingsChanged("key-a", { durationMinutes: "" }));
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 15 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 15, style: DEFAULT_STYLE });
 		expect(t.coordinator.presetMinutes("key-a")).toBe(15); // what the plugin writes back to settings
 	});
 
@@ -515,7 +517,7 @@ describe("editing a key's duration", () => {
 
 		t.apply(t.coordinator.keyDown("key-a"));
 		t.elapse(HOLD_MS);
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 1 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 1, style: DEFAULT_STYLE });
 		expect(t.events.map((e) => e.type)).not.toContain("completed");
 	});
 });
@@ -531,7 +533,7 @@ describe("a tap whose session changed while the key was down", () => {
 		t.elapse(200);
 		t.apply(t.coordinator.keyUp("key-a"));
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "done", minutes: 0 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "done", minutes: 0, style: DEFAULT_STYLE });
 		expect(t.events.map((e) => e.type)).toEqual(["started", "completed"]);
 	});
 
@@ -544,7 +546,7 @@ describe("a tap whose session changed while the key was down", () => {
 		t.apply(t.coordinator.keyDown("key-a"));
 		t.apply(t.coordinator.keyUp("key-a"));
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "done", minutes: 0 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "done", minutes: 0, style: DEFAULT_STYLE });
 		expect(t.events.map((e) => e.type)).toEqual(["started", "completed"]);
 	});
 
@@ -561,7 +563,7 @@ describe("a tap whose session changed while the key was down", () => {
 		t.press("key-b");
 		t.apply(t.coordinator.keyUp("key-a"));
 
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE });
 		expect(t.display.get("key-b")).toMatchObject({ state: "running", minutes: 15 });
 	});
 
@@ -589,7 +591,7 @@ describe("unexpected key events", () => {
 		const out = t.apply(t.coordinator.keyUp("key-a"));
 
 		expect(out).toEqual({ renders: [], events: [] });
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE });
 	});
 
 	it("drops a hold whose key disappears mid-press, without cancelling the session", () => {
@@ -616,6 +618,82 @@ describe("unexpected key events", () => {
 
 		expect(out).toEqual({ renders: [], events: [] });
 		t.appear("key-a", { durationMinutes: 10 });
-		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 10 });
+		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 10, style: DEFAULT_STYLE });
+	});
+});
+
+describe("key appearance", () => {
+	it("draws a new key in the default color and font, and its saved ones when set", () => {
+		const t = setup();
+		t.appear("key-a");
+		t.appear("key-b", { durationMinutes: 15, color: "#1e90ff", font: "oswald" });
+
+		expect(t.display.get("key-a")).toMatchObject({ style: { color: "#ff6347", font: "inter" } });
+		expect(t.display.get("key-b")).toMatchObject({ minutes: 15, style: { color: "#1e90ff", font: "oswald" } });
+	});
+
+	it.each([["idle"], ["running"], ["paused"], ["done"]])("restyles a %s key at once without touching the timer", (state) => {
+		const t = setup();
+		t.appear("key-a", { durationMinutes: 15 });
+		if (state !== "idle") t.press("key-a");
+		t.elapse(MIN + 30_000);
+		if (state === "paused") t.press("key-a");
+		if (state === "done") t.elapse(15 * MIN);
+		const before = t.display.get("key-a")!;
+		const eventCount = t.events.length;
+
+		const out = t.apply(t.coordinator.settingsChanged("key-a", { durationMinutes: 15, color: "#32cd32", font: "bitter" }));
+
+		expect(out.events).toEqual([]);
+		expect(out.renders).toEqual([{ ...before, style: { color: "#32cd32", font: "bitter" } }]);
+		expect(t.events.length).toBe(eventCount);
+		// The timer carries on exactly as before: same remaining time, same next step.
+		if (state === "running") {
+			t.elapse(29_999);
+			expect(t.display.get("key-a")).toMatchObject({ state: "running", minutes: 14 });
+			t.elapse(1);
+			expect(t.display.get("key-a")).toMatchObject({ state: "running", minutes: 13, style: { font: "bitter" } });
+		}
+		if (state === "paused") {
+			t.press("key-a");
+			expect(t.events.at(-1)).toEqual({ type: "resumed", keyId: "key-a" });
+		}
+	});
+
+	it("restyles only the edited key", () => {
+		const t = setup();
+		t.appear("key-a");
+		t.appear("key-b");
+		t.press("key-b");
+
+		const out = t.apply(t.coordinator.settingsChanged("key-a", { color: "#ffd700" }));
+
+		expect(out.renders.map((r) => r.keyId)).toEqual(["key-a"]);
+		expect(t.display.get("key-a")).toMatchObject({ state: "idle", minutes: 5, style: { color: "#ffd700" } });
+		expect(t.coordinator.presetMinutes("key-a")).toBe(5);
+		expect(t.display.get("key-b")).toMatchObject({ state: "running", style: { color: "#ff6347" } });
+	});
+
+	it("keeps a running key's duration and countdown when settings carry only a new color", () => {
+		const t = setup();
+		t.appear("key-a", { durationMinutes: 15 });
+		t.press("key-a");
+		t.elapse(MIN + 30_000);
+		const before = t.display.get("key-a")!;
+		const wakeAt = t.coordinator.nextChangeAt();
+
+		const out = t.apply(t.coordinator.settingsChanged("key-a", { color: "#ffd700" }));
+
+		expect(out).toEqual({ renders: [{ ...before, style: { ...DEFAULT_STYLE, color: "#ffd700" } }], events: [] });
+		expect(t.display.get("key-a")).toMatchObject({ state: "running", minutes: 14 });
+		expect(t.coordinator.nextChangeAt()).toBe(wakeAt);
+		expect(t.coordinator.presetMinutes("key-a")).toBe(15);
+	});
+
+	it("does not redraw when saved settings leave the look unchanged", () => {
+		const t = setup();
+		t.appear("key-a", { color: "#1e90ff", font: "nunito" });
+
+		expect(t.coordinator.settingsChanged("key-a", { color: "#1E90FF", font: "nunito" })).toEqual({ renders: [], events: [] });
 	});
 });
