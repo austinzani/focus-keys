@@ -19,6 +19,22 @@
 					"ShowTitle": false
 				}
 			]
+		},
+		{
+			"Name": "Break",
+			"UUID": "com.austinzani.focus-keys.break",
+			"Icon": "imgs/actions/break/icon",
+			"Tooltip": "A break timer that never switches Focus. Tap to start, pause, or resume. Hold to cancel.",
+			"PropertyInspectorPath": "ui/preset.html",
+			"Controllers": ["Keypad"],
+			"SupportedInMultiActions": false,
+			"UserTitleEnabled": false,
+			"States": [
+				{
+					"Image": "imgs/actions/break/key",
+					"ShowTitle": false
+				}
+			]
 		}
 	],
 	"Category": "Focus Keys",

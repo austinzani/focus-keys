@@ -22,15 +22,15 @@ Status: **done**, **owner** (needs an owner decision or action), **asset** (need
 | Packed with `streamdeck pack`; validation passes | done | `npm run package` builds, validates and packs `release/com.austinzani.focus-keys.streamDeckPlugin`. |
 | Required manifest fields: Actions, Author, CodePath, Description, Icon, Name, OS, SDKVersion, Software.MinimumVersion, UUID, Version | done | All present. |
 | `Version` in `x.x.x.x` form | done | `0.1.0.0`; `package.json` is `0.1.0`, and `npm run package` checks they match. |
-| UUID: reverse DNS, lowercase a–z, 0–9, `-`, `.`; includes author and plugin name; action UUIDs prefixed with it | done | `com.austinzani.focus-keys`, action `com.austinzani.focus-keys.preset`. **Must be final before the first publish.** Elgato's guidelines say not to change UUIDs after publishing; a new UUID is a different plugin, and keys users placed stop working. See "Renaming before first publish" in [DEVELOPMENT.md](DEVELOPMENT.md). |
+| UUID: reverse DNS, lowercase a–z, 0–9, `-`, `.`; includes author and plugin name; action UUIDs prefixed with it | done | `com.austinzani.focus-keys`, actions `com.austinzani.focus-keys.preset` and `.break`. **Must be final before the first publish.** Elgato's guidelines say not to change UUIDs after publishing; a new UUID is a different plugin, and keys users placed stop working. See "Renaming before first publish" in [DEVELOPMENT.md](DEVELOPMENT.md). |
 | DRM readiness: `@elgato/streamdeck` v2+, `SDKVersion` 3, `Software.MinimumVersion` ≥ 6.9, CLI ≥ 1.6, manifest never read at runtime, shipped files never modified | done | SDK 3.0.6, SDKVersion 3, minimum Stream Deck 7.1, CLI 1.10.5. The plugin doesn't read `manifest.json`. It writes only to its state folder (`~/Library/Application Support/com.austinzani.focus-keys/`: `state.json`, its temporary files and any moved-aside backup) and its logs, never its shipped files. Elgato now requires DRM compatibility for new submissions and updates (seen only in a Maker Console search snippet; UNVERIFIED). |
 | No debug settings in the release manifest | done | `Nodejs.Debug` removed; `npm run package` refuses to pack if it's back. Whether Elgato blocks it is undocumented. |
 | No dev files in the package | done | `.sdignore` excludes `logs/`, `.DS_Store`, `*.map`; CLI defaults exclude `.git`, `/.env*`, `*.log`, `*.js.map`. Package has 21 files, about 121 KiB. |
 | Third-party licenses ship with the plugin | done | `licenses/fonts/` (5 × SIL OFL 1.1 + NOTICE), `ui/vendor/LICENSES.md` (sdpi-components MIT, Lit BSD-3-Clause), `bin/THIRD_PARTY_LICENSES.txt` (bundled npm code: @elgato/streamdeck, @elgato/utils, @elgato/schemas, @streamdeck/core, ws, zod: MIT; tslib: 0BSD). |
 | `OS` declares only supported platforms | done | `mac`, minimum 12. Reviewers check device and OS claims. |
-| Category and action names ≤ ~30 characters, category same as or close to plugin name, tooltips set | done | Category "Focus Keys", action "Timer Preset", tooltip set. |
+| Category and action names ≤ ~30 characters, category same as or close to plugin name, tooltips set | done | Category "Focus Keys", actions "Timer Preset" and "Break", tooltips set. |
 | Optional `URL` / `SupportURL` in manifest | owner | Not set. Add once a support page exists (`SupportURL` needs Stream Deck 6.9+). |
-| Guideline: offer 2 to 30 actions | owner (risk) | The plugin has **one** configurable action, used on four keys. Guidelines prefer consolidated, configurable actions, which this is, but a reviewer could flag the count. Options: submit as is and explain in the review notes, or split out a second action later. |
+| Guideline: offer 2 to 30 actions | done | Two actions: Timer Preset and Break (a timer that never switches Focus). |
 | Use `showAlert` when an action fails | partial | Shown when a Focus shortcut fails. A failed sound or notification (`afplay`/`osascript`) is only logged; the timer itself has no failure case. |
 | ≤ 10 key updates per second | done | Keys redraw only on ring steps, minute boundaries and state changes. |
 
@@ -102,6 +102,7 @@ Claims are limited to behavior in the code and the user guide; Focus restore and
 
 - Whole-minute countdown with a progress ring, no seconds
 - Tap to start, pause and resume; hold to cancel; tap another key to switch
+- Break key that shares the timer but never turns Focus on
 - Per-key duration (1–180 min), color and font
 - Completion sound and optional macOS notification with custom text
 - Optional Focus switching through your own Shortcuts
@@ -122,7 +123,7 @@ Claims are limited to behavior in the code and the user guide; Focus restore and
 
 **Release notes 0.1.0:**
 
-> First release. Whole-minute timer keys with a progress ring, completion sound and notification, per-key color and font, optional Focus switching through Shortcuts, and recovery across sleep and restarts.
+> First release. Whole-minute timer keys and a Break key with a progress ring, completion sound and notification, per-key color and font, optional Focus switching through Shortcuts, and recovery across sleep and restarts.
 
 ## Licensing
 

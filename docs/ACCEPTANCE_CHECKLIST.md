@@ -20,7 +20,7 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 
 - [ ] 1. Remove the dev link: `npx streamdeck unlink com.austinzani.focus-keys`. In Stream Deck › Preferences › Plugins, Focus Keys is gone, and `~/Library/Application Support/com.elgato.StreamDeck/Plugins/` has no `com.austinzani.focus-keys.sdPlugin`.
 - [ ] 2. Optional, closer to a user's Mac: `npx streamdeck dev --disable`, and move `~/Library/Application Support/com.austinzani.focus-keys/` aside for a fresh state.
-- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Focus Keys** category appears with **Timer Preset**, with its icon in the action list and in Preferences › Plugins showing version 0.1.0.0.
+- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Focus Keys** category appears with **Timer Preset** and **Break** (cup icon), each with its icon in the action list and in Preferences › Plugins showing version 0.1.0.0.
 - [ ] 4. The installed folder's `logs/` contains a log with `Focus Keys plugin connected` and no errors.
 
 ## 2. Four-key timer
@@ -36,6 +36,7 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 - [ ] 9. Let a 1-minute key finish. It shows **0** with no ring and stays there. Tap it: a fresh countdown starts. Let it finish again and hold it: it clears to its idle number.
 - [ ] 10. While a timer runs, change that key's minutes. The countdown continues unchanged. Hold to cancel; the key now shows the new value.
 - [ ] 11. Quit and reopen Stream Deck. All four keys show their saved durations.
+- [ ] 12. Drag **Break** onto a fifth key: it shows a teal **5**, and its Property Inspector shows Color teal. Start a 25 key, then press Break: the 25 key goes idle and Break counts. Let Break finish: sound plays, key shows **0**.
 
 ## 3. Appearance per font and color
 
@@ -90,7 +91,8 @@ Use a 1-minute key.
 - [ ] 8. Uncheck switching mid-timer: when it ends, Focus is left on.
 - [ ] 9. Work Focus on, notification enabled, **On end** = **Leave Focus as it is**: note whether the banner appears; the sound plays.
 - [ ] 10. If **Share across devices** is on, confirm the iPhone follows and decide whether that's acceptable.
-- [ ] 11. Log shows `Focus shortcut … failed` only where expected.
+- [ ] 11. Start a Break key on its own: Focus doesn't change at start, pause, resume or finish. Start a work key (Focus on), then press Break: **On end** runs and Focus turns off. Press a work key again: Focus comes back on.
+- [ ] 12. Log shows `Focus shortcut … failed` only where expected.
 
 ## 6. Recovery
 

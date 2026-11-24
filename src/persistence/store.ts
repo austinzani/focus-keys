@@ -244,7 +244,8 @@ function parseSession(raw: unknown): Session | undefined {
 	const { id, keyId, durationMs } = raw;
 	if (!isSessionId(id) || typeof keyId !== "string" || keyId === "") return undefined;
 	if (!Number.isInteger(durationMs) || (durationMs as number) <= 0 || (durationMs as number) > MAX_DURATION_MINUTES * 60_000) return undefined;
-	const base = { id, keyId, durationMs: durationMs as number };
+	// Only breaks are marked; anything else (including sessions saved before breaks existed) is a focus session.
+	const base = { id, keyId, durationMs: durationMs as number, ...(raw.kind === "break" ? { kind: "break" as const } : {}) };
 	if (raw.status === "running" && Number.isFinite(raw.endsAt)) return { ...base, status: "running", endsAt: raw.endsAt as number };
 	if (raw.status === "paused" && Number.isFinite(raw.remainingMs)) {
 		return { ...base, status: "paused", remainingMs: Math.min(Math.max(raw.remainingMs as number, 0), base.durationMs) };

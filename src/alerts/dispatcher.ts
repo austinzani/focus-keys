@@ -89,7 +89,7 @@ export class AlertDispatcher {
 			log.error("Could not read alert settings; using defaults", err);
 		}
 		await marked;
-		const plan = planAlert(parseAlertPrefs(settings), event.durationMs);
+		const plan = planAlert(parseAlertPrefs(settings), event.durationMs, event.kind ?? "focus");
 		log.info(`alert session=${event.sessionId} sound=${plan.sound ?? "none"} notification=${plan.notification !== undefined}`);
 		await Promise.all([
 			plan.sound === undefined ? undefined : this.ports.sound.play(plan.sound).catch((err: unknown) => log.error("Completion sound failed", err)),

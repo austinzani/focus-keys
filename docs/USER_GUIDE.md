@@ -12,7 +12,7 @@ Focus Keys turns Stream Deck keys into whole-minute countdown timers. Each key i
 
 1. Double-click `com.austinzani.focus-keys.streamDeckPlugin`.
 2. Stream Deck asks whether to install the plugin. Confirm.
-3. The **Focus Keys** category appears in the Stream Deck app's action list, with one action, **Timer Preset**.
+3. The **Focus Keys** category appears in the Stream Deck app's action list, with two actions: **Timer Preset** for work sessions and **Break** for breaks.
 
 Updating works the same way: double-click the newer file. Keys and their settings belong to your Stream Deck profile, and the timer's state is stored outside the plugin folder, so both should carry over.
 
@@ -21,7 +21,8 @@ Updating works the same way: double-click the newer file. Keys and their setting
 1. Drag **Timer Preset** onto four keys. Each new key shows a large tomato-colored **5**.
 2. Select each key and set **Minutes** in the Property Inspector, for example **5**, **15**, **25** and **50**. The field saves when you press Enter, click away, or close the Property Inspector.
 3. Optionally give each key its own **Color** and **Font**.
-4. Optionally set up a completion sound or notification and Focus switching (below). Those settings are shared by all timer keys.
+4. Optionally drag **Break** onto a fifth key for breaks. It starts teal and works like a preset key, but never turns Focus on (see below).
+5. Optionally set up a completion sound or notification and Focus switching (below). Those settings are shared by all timer keys.
 
 ## Using the timer
 
@@ -102,6 +103,7 @@ Off by default. macOS doesn't let plugins set Focus directly, so Focus Keys runs
 | Resume | Runs **On start** |
 | Another key replaces a running timer | Nothing: Focus stays on, no off-then-on flicker |
 | Another key replaces a paused timer | Runs **On start** (the pause already ran **On end**) |
+| A **Break** key starts, pauses, resumes or finishes | Never runs **On start**. Taking over from a running work timer runs **On end** |
 | Switching unchecked | Nothing ever runs |
 
 Shortcuts run in the background, one at a time, and never delay the countdown. A shortcut that hasn't finished after 30 seconds is stopped.

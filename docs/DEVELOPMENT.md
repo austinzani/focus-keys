@@ -53,7 +53,7 @@ npm run package      # build, validate and pack (see Packaging)
   `osascript`'s `display notification` is attributed to Script Editor. Observed during development on macOS 27.0.1: the macOS notification log shows `Connection com.apple.ScriptEditor2 with path: /usr/bin/osascript`, then the banner is delivered and presented.
 - `src/core/focus.ts`: validates Focus settings and maps session events to Focus start/end. `src/focus/dispatcher.ts` runs shortcuts in order, at most one start and one end per focus session. `src/focus/shortcuts.ts` runs and lists shortcuts with `/usr/bin/shortcuts`. `src/focus/picker.ts` fills the Property Inspector's pickers. `src/focus/status.ts` keeps the last-problem line.
 - `src/persistence/store.ts`: the state file (below).
-- `src/actions/preset-timer.ts`: the Stream Deck adapter. Forwards SDK events to the controller, paints keys with `setImage`, reads global settings.
+- `src/actions/timer-actions.ts`: the Stream Deck adapter. Two actions, Timer Preset (`focus` kind) and Break (`break` kind), forward SDK events to one shared `TimerKeys`, which owns the controller, paints keys with `setImage` and reads global settings. A break session is marked `kind: "break"` in the coordinator, its events and the state file; `focusIntent` treats every break event as an end, so a break never turns Focus on.
 - `com.austinzani.focus-keys.sdPlugin/ui/preset.html`: the Property Inspector. Uses [sdpi-components](https://sdpi-components.dev) v4.0.1, vendored in `ui/vendor/` so it works offline; its MIT and bundled Lit BSD-3-Clause licenses are in `ui/vendor/LICENSES.md`.
 
 ## Coordinator events
@@ -118,7 +118,7 @@ The UUID must be final before the first Marketplace publish. Elgato's plugin gui
 
 | Where | What |
 | --- | --- |
-| `com.austinzani.focus-keys.sdPlugin/manifest.json` | `Name`, `Category`, `UUID`, the action `UUID` (`<uuid>.preset`) |
+| `com.austinzani.focus-keys.sdPlugin/manifest.json` | `Name`, `Category`, `UUID`, the action UUIDs (`<uuid>.preset`, `<uuid>.break`) |
 | `com.austinzani.focus-keys.sdPlugin/` | Folder name must be `<uuid>.sdPlugin` |
 | `rollup.config.mjs` | `sdPlugin` constant |
 | `package-lock.json` | `name` (run `npm install` after changing `package.json`) |
@@ -126,7 +126,7 @@ The UUID must be final before the first Marketplace publish. Elgato's plugin gui
 | `scripts/package.mjs` | `sdPlugin` constant |
 | `scripts/generate-glyphs.mjs` | `licenseDir` |
 | `scripts/generate-icons.mjs` | `imgs` path (plugin folder name) |
-| `src/actions/preset-timer.ts` | `PRESET_ACTION_UUID` |
+| `src/actions/timer-actions.ts` | `PRESET_ACTION_UUID`, `BREAK_ACTION_UUID` |
 | `src/persistence/store.ts` | State folder under Application Support (old state is orphaned; fine before release) |
 | `src/core/alerts.ts` | `NOTIFICATION_TITLE` (the banner title) |
 | `src/plugin.ts` | Log lines |

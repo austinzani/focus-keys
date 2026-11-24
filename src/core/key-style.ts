@@ -9,25 +9,27 @@ export type FontId = (typeof FONT_IDS)[number];
 
 export const DEFAULT_FONT: FontId = "inter";
 export const DEFAULT_COLOR = "#ff6347";
+/** A Break key's color until one is chosen. */
+export const BREAK_DEFAULT_COLOR = "#3cc4a8";
 /** Every key is drawn on this background. */
 export const KEY_BACKGROUND = "#111111";
 /** A chosen color is lightened until it reaches this WCAG contrast ratio against the key background. */
 const MIN_CONTRAST = 4.5;
 
-/** Reads the color and font settings; anything unusable falls back to the default. */
-export function parseKeyStyle(settings: { color?: unknown; font?: unknown }): KeyStyle {
-	return { color: parseColor(settings.color), font: parseFont(settings.font) };
+/** Reads the color and font settings; anything unusable falls back to the default (`defaultColor` for the color). */
+export function parseKeyStyle(settings: { color?: unknown; font?: unknown }, defaultColor: string = DEFAULT_COLOR): KeyStyle {
+	return { color: parseColor(settings.color, defaultColor), font: parseFont(settings.font) };
 }
 
 function parseFont(value: unknown): FontId {
 	return FONT_IDS.find((id) => id === value) ?? DEFAULT_FONT;
 }
 
-function parseColor(value: unknown): string {
-	if (typeof value !== "string") return DEFAULT_COLOR;
+function parseColor(value: unknown, defaultColor: string): string {
+	if (typeof value !== "string") return defaultColor;
 	const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(value);
 	const hex = short ? `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}` : value;
-	if (!/^#[0-9a-f]{6}$/i.test(hex)) return DEFAULT_COLOR;
+	if (!/^#[0-9a-f]{6}$/i.test(hex)) return defaultColor;
 	return ensureVisible(hex.toLowerCase());
 }
 

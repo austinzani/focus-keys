@@ -30,8 +30,11 @@ export function parseFocusPrefs(settings: FocusSettings | undefined): FocusPrefs
  * What a session transition means for Focus, at the level of the whole focus session rather than a key:
  * running work wants the start Focus; a pause, cancel or completion ends it. A replacement wants running
  * work too; the dispatcher does nothing for it when the focus session is already started (replacing running work).
+ * A break never wants Focus: every break event ends it, so switching from work to a break turns Focus off
+ * (the dispatcher does nothing when Focus wasn't started).
  */
 export function focusIntent(event: SessionEvent): "start" | "end" {
+	if (event.kind === "break") return "end";
 	switch (event.type) {
 		case "started":
 		case "resumed":

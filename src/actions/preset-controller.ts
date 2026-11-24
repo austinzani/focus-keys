@@ -1,5 +1,5 @@
 import type { Clock } from "../core/clock";
-import { type KeyRender, type Output, type PresetSettings, type SessionEvent, TimerCoordinator } from "../core/coordinator";
+import { type KeyRender, kindOf, type Output, type PresetSettings, type SessionEvent, type TimerKind, TimerCoordinator } from "../core/coordinator";
 import type { Log } from "../alerts/dispatcher";
 import type { PersistedState } from "../persistence/store";
 import { WakeTimer } from "./wake-timer";
@@ -34,7 +34,7 @@ export type PresetControllerPorts = {
  * so a restart or sleep picks up from the original end time. `recover()` runs once Stream Deck is
  * connected: a session that ended while the plugin was stopped completes then, and its alert is delivered
  * once (the alert dispatcher dedupes by saved session id). Focus the plugin turned on for work that is no
- * longer running is ended once (the Focus dispatcher dedupes by its saved record). Keys appearing later
+ * longer running is ended once (the Focus dispatcher dedupes by its saved record), as is Focus left on while a break runs. Keys appearing later
  * draw the restored state.
  */
 export class PresetController {
@@ -69,12 +69,13 @@ export class PresetController {
 		// A key that appeared before this may already have caught up; the alert dispatcher dedupes what follows.
 		this.ports.log.info(session === undefined ? "no persisted session" : `restored session ${JSON.stringify(session)}`);
 		if (session?.status === "completed" && session.id > (saved?.lastAlertedSessionId ?? 0)) {
-			const missed = { type: "completed", keyId: session.keyId, sessionId: session.id, durationMs: session.durationMs } as const;
+			const missed = { type: "completed", keyId: session.keyId, sessionId: session.id, durationMs: session.durationMs, ...kindOf(session) } as const;
 			this.ports.alerts.handle([missed]).catch((err: unknown) => this.ports.log.error("Alert failed", err));
 		}
 		this.wake();
 		const now = this.#coordinator.snapshot().session;
-		if (now?.status !== "running") {
+		// A running break doesn't want Focus either (a crash can leave Focus on just after switching to one).
+		if (now?.status !== "running" || now.kind === "break") {
 			this.ports.focus.endLeftover?.(now?.keyId ?? "").catch((err: unknown) => this.ports.log.error("Focus switching failed", err));
 		}
 	}
@@ -84,8 +85,8 @@ export class PresetController {
 		this.#wake.schedule(undefined);
 	}
 
-	keyAppeared(keyId: string, settings: PresetSettings): void {
-		this.#apply(this.#coordinator.keyAppeared(keyId, settings));
+	keyAppeared(keyId: string, settings: PresetSettings, kind: TimerKind = "focus"): void {
+		this.#apply(this.#coordinator.keyAppeared(keyId, settings, kind));
 	}
 
 	keyDisappeared(keyId: string): void {

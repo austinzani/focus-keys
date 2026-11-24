@@ -4,6 +4,8 @@
 //   imgs/plugin/category-icon           action-list category icon, 28 / 56 px, white on transparent
 //   imgs/actions/preset/icon            action-list action icon, 20 / 40 px, white on transparent
 //   imgs/actions/preset/key             default key image, 72 / 144 px (a new key's idle 5)
+//   imgs/actions/break/icon             Break action-list icon, 20 / 40 px, white cup on transparent
+//   imgs/actions/break/key              Break default key image, 72 / 144 px (idle 5 in the break color)
 // It also writes the Maker Console app icon (288 px) and gallery mock-ups (1920 x 960) to release/gallery/ (git-ignored; not part of the plugin).
 // Usage: npm run icons   (commit the regenerated PNGs)
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -38,7 +40,7 @@ const swap = (text, pattern, replacement) => {
 const server = await createServer({ root, logLevel: "error", server: { middlewareMode: true }, appType: "custom" });
 try {
 	const { renderKeySvg } = await server.ssrLoadModule("/src/render/key-image.ts");
-	const { FONT_IDS, parseKeyStyle, KEY_BACKGROUND } = await server.ssrLoadModule("/src/core/key-style.ts");
+	const { FONT_IDS, parseKeyStyle, KEY_BACKGROUND, BREAK_DEFAULT_COLOR } = await server.ssrLoadModule("/src/core/key-style.ts");
 	const key = (state, minutes, ring, settings = {}) => renderKeySvg({ keyId: "k", state, minutes, ring, style: parseKeyStyle(settings) });
 
 	// Plugin icon: a running 25 on a rounded dark tile.
@@ -68,6 +70,19 @@ try {
 	write(join(imgs, "actions", "preset", "key.png"), png(idle, 72));
 	write(join(imgs, "actions", "preset", "key@2x.png"), png(idle, 144));
 
+	// Break action: a white cup with steam, so it reads differently from the timer preset's ring in the action list.
+	const cup = (strokeWidth) =>
+		`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><g fill="none" stroke="#ffffff" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">` +
+		`<path d="M30 62 H100 V92 A28 28 0 0 1 72 120 H58 A28 28 0 0 1 30 92 Z"/>` + // cup
+		`<path d="M100 70 H108 A14 14 0 0 1 108 98 H99"/>` + // handle
+		`<path d="M52 22 C44 32 60 38 52 48 M74 22 C66 32 82 38 74 48"/>` + // steam
+		`</g></svg>`;
+	write(join(imgs, "actions", "break", "icon.png"), png(cup(14), 20));
+	write(join(imgs, "actions", "break", "icon@2x.png"), png(cup(12), 40));
+	const breakIdle = key("idle", 5, undefined, { color: BREAK_DEFAULT_COLOR });
+	write(join(imgs, "actions", "break", "key.png"), png(breakIdle, 72));
+	write(join(imgs, "actions", "break", "key@2x.png"), png(breakIdle, 144));
+
 	// Gallery mock-ups: a row of rounded keys on a dark panel. No text, so no font dependency; captions are added in Maker Console.
 	const galleryRow = (keys) => {
 		const { width, height } = GALLERY;
@@ -86,7 +101,7 @@ try {
 		return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><radialGradient id="bg" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#26262a"/><stop offset="1" stop-color="#0b0b0c"/></radialGradient></defs><rect width="${width}" height="${height}" fill="url(#bg)"/>${cells}</svg>`;
 	};
 	const galleries = {
-		"1-four-keys": [key("idle", 5), key("running", 25, 0.62), key("idle", 15), key("idle", 50)],
+		"1-four-keys": [key("running", 25, 0.62), key("idle", 15), key("idle", 50), key("idle", 5, undefined, { color: BREAK_DEFAULT_COLOR })],
 		"2-states": [key("idle", 25), key("running", 18, 0.72), key("paused", 18, 0.72), key("done", 0)],
 		"3-colors": [
 			{ color: "#ff6347", minutes: 25, ring: 0.62 },

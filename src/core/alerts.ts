@@ -19,6 +19,8 @@ export type AlertPlan = { sound?: SoundId; notification?: { title: string; body:
 export const DEFAULT_SOUND: SoundId = "glass";
 /** `{minutes}` is replaced with the finished session's length in whole minutes. */
 export const DEFAULT_NOTIFICATION_TEXT = "Time's up: {minutes}-minute timer finished.";
+/** Used instead of DEFAULT_NOTIFICATION_TEXT when a break finishes and no text was chosen. */
+export const DEFAULT_BREAK_NOTIFICATION_TEXT = "Break's over: {minutes}-minute break finished.";
 export const NOTIFICATION_TITLE = "Focus Keys";
 /** Longer text is cut (in characters); macOS truncates long banners anyway. */
 export const MAX_NOTIFICATION_TEXT = 200;
@@ -34,14 +36,15 @@ export function parseAlertPrefs(settings: AlertSettings | undefined): AlertPrefs
 	};
 }
 
-/** Sound and notification are independent: either, both or neither. */
-export function planAlert(prefs: AlertPrefs, durationMs: number): AlertPlan {
+/** Sound and notification are independent: either, both or neither. A break with the default text gets the break text. */
+export function planAlert(prefs: AlertPrefs, durationMs: number, kind: "focus" | "break" = "focus"): AlertPlan {
 	const plan: AlertPlan = {};
 	if (prefs.sound !== "none") plan.sound = prefs.sound;
 	if (prefs.notificationEnabled) {
 		const minutes = String(Math.round(durationMs / 60_000));
 		// Cut by code point so an emoji is never split in half.
-		const body = [...prefs.notificationText.replaceAll("{minutes}", minutes)].slice(0, MAX_NOTIFICATION_TEXT).join("");
+		const text = kind === "break" && prefs.notificationText === DEFAULT_NOTIFICATION_TEXT ? DEFAULT_BREAK_NOTIFICATION_TEXT : prefs.notificationText;
+		const body = [...text.replaceAll("{minutes}", minutes)].slice(0, MAX_NOTIFICATION_TEXT).join("");
 		plan.notification = { title: NOTIFICATION_TITLE, body };
 	}
 	return plan;

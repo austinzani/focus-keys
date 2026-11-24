@@ -87,7 +87,7 @@ export class FocusDispatcher {
 	/**
 	 * After a restart, once the restored session has caught up with the clock: if this plugin had turned
 	 * Focus on and that work is no longer running (it ended, or was paused or cancelled just before a
-	 * crash), runs the end transition, once. Call only when no session is running. Never rejects.
+	 * crash), runs the end transition, once. Call only when no focus session is running (none, or a break). Never rejects.
 	 */
 	endLeftover(keyId: string): Promise<void> {
 		if (this.#started && !this.#finished) this.#enqueue({ intent: "end", keyId, sessionId: this.#sessionId });

@@ -15,7 +15,7 @@ import streamDeck, {
 import { AlertDispatcher } from "../alerts/dispatcher";
 import { AfplaySoundPlayer, OsascriptNotifier } from "../alerts/macos";
 import { systemClock } from "../core/clock";
-import { parseDuration, type PresetSettings } from "../core/coordinator";
+import { defaultColorFor, parseDuration, type PresetSettings, type TimerKind } from "../core/coordinator";
 import { FocusDispatcher } from "../focus/dispatcher";
 import { answerShortcutPicker } from "../focus/picker";
 import { ShortcutsCli } from "../focus/shortcuts";
@@ -25,25 +25,28 @@ import { keyImageDataUrl } from "../render/key-image";
 import { PresetController } from "./preset-controller";
 
 export const PRESET_ACTION_UUID = "com.austinzani.focus-keys.preset";
+export const BREAK_ACTION_UUID = "com.austinzani.focus-keys.break";
+
+type TimerKey = KeyAction<PresetSettings>;
+type SettingsTarget = { id: string; setSettings(s: PresetSettings): Promise<void> };
 
 /**
- * Thin Stream Deck adapter: forwards key and settings events to the PresetController and paints its
- * renders with setImage. Each key's duration, color and font are action settings the SDK persists; the
+ * What both timer actions share: the one PresetController (so one session runs across Timer Preset and
+ * Break keys), the visible keys it paints with setImage, and the Focus problem line shown in the open
+ * Property Inspector. Each key's duration, color and font are action settings the SDK persists; the
  * completion alert and Focus preferences are plugin global settings shared by every key, read when used.
  * A failed Focus shortcut shows the key's alert and is reported in the Property Inspector's Focus section
  * until a shortcut runs or the Focus settings change. The timer session and alert delivery record are
- * saved in the plugin's state file (`store`), loaded before this action is created.
+ * saved in the plugin's state file (`store`), loaded before the actions are created.
  */
-@action({ UUID: PRESET_ACTION_UUID })
-export class PresetTimerAction extends SingletonAction<PresetSettings> {
-	readonly #keys = new Map<string, KeyAction<PresetSettings>>();
+export class TimerKeys {
+	readonly #keys = new Map<string, TimerKey>();
 	readonly #shortcuts = new ShortcutsCli();
 	/** The latest Focus problem, shown in the open Property Inspector. */
 	readonly #focusStatus = new FocusStatus((status) => this.#sendToInspector(status));
 	readonly #controller: PresetController;
 
 	constructor(store: StateStore) {
-		super();
 		this.#controller = new PresetController({
 			clock: systemClock,
 			paint: (render) => {
@@ -86,32 +89,30 @@ export class PresetTimerAction extends SingletonAction<PresetSettings> {
 		this.#controller.recover();
 	}
 
-	override onWillAppear(ev: WillAppearEvent<PresetSettings>): void {
-		if (!ev.action.isKey()) return;
-		this.#keys.set(ev.action.id, ev.action);
-		this.#controller.keyAppeared(ev.action.id, ev.payload.settings);
-		this.#saveEffectiveDuration(ev.action, ev.payload.settings);
+	appeared(key: TimerKey, settings: PresetSettings, kind: TimerKind): void {
+		this.#keys.set(key.id, key);
+		this.#controller.keyAppeared(key.id, settings, kind);
+		this.#saveEffectiveSettings(key, settings, kind);
 	}
 
-	override onWillDisappear(ev: WillDisappearEvent<PresetSettings>): void {
-		this.#keys.delete(ev.action.id);
-		this.#controller.keyDisappeared(ev.action.id);
+	disappeared(keyId: string): void {
+		this.#keys.delete(keyId);
+		this.#controller.keyDisappeared(keyId);
 	}
 
-	/** Fired when the Property Inspector saves this key's settings. */
-	override onDidReceiveSettings(ev: DidReceiveSettingsEvent<PresetSettings>): void {
-		this.#controller.settingsChanged(ev.action.id, ev.payload.settings);
+	settingsChanged(keyId: string, settings: PresetSettings): void {
+		this.#controller.settingsChanged(keyId, settings);
 	}
 
 	/** The Property Inspector saves each committed entry (Enter, blur, close); once it closes, an unusable entry is replaced. */
-	override onPropertyInspectorDidDisappear(ev: PropertyInspectorDidDisappearEvent<PresetSettings>): void {
-		ev.action
+	inspectorClosed(key: TimerKey, kind: TimerKind): void {
+		key
 			.getSettings()
-			.then((settings) => this.#saveEffectiveDuration(ev.action, settings))
+			.then((settings) => this.#saveEffectiveSettings(key, settings, kind))
 			.catch((err: unknown) => streamDeck.logger.error("getSettings failed", err));
 	}
 
-	override onPropertyInspectorDidAppear(_ev: PropertyInspectorDidAppearEvent<PresetSettings>): void {
+	inspectorOpened(): void {
 		this.#sendToInspector(this.#focusStatus.current);
 		// Settings can only change while an inspector is open; remember them to spot a Focus change.
 		streamDeck.settings
@@ -121,10 +122,10 @@ export class PresetTimerAction extends SingletonAction<PresetSettings> {
 	}
 
 	/** Answers the inspector's request for the Focus problem line, and the Focus shortcut pickers' requests for the user's shortcuts. */
-	override async onSendToPlugin(ev: SendToPluginEvent<{ event: string }, PresetSettings>): Promise<void> {
+	async messageFromInspector(payload: { event: string }): Promise<void> {
 		const reply =
-			this.#focusStatus.answer(ev.payload) ??
-			(await answerShortcutPicker(ev.payload, {
+			this.#focusStatus.answer(payload) ??
+			(await answerShortcutPicker(payload, {
 				list: () => this.#shortcuts.list(),
 				loadSettings: () => streamDeck.settings.getGlobalSettings(),
 				log: streamDeck.logger,
@@ -132,12 +133,12 @@ export class PresetTimerAction extends SingletonAction<PresetSettings> {
 		if (reply !== undefined) this.#sendToInspector(reply);
 	}
 
-	override onKeyDown(ev: KeyDownEvent<PresetSettings>): void {
-		this.#controller.keyDown(ev.action.id);
+	keyDown(keyId: string): void {
+		this.#controller.keyDown(keyId);
 	}
 
-	override onKeyUp(ev: KeyUpEvent<PresetSettings>): void {
-		this.#controller.keyUp(ev.action.id);
+	keyUp(keyId: string): void {
+		this.#controller.keyUp(keyId);
 	}
 
 	/** Sends a message to the open Property Inspector, if any. */
@@ -147,12 +148,74 @@ export class PresetTimerAction extends SingletonAction<PresetSettings> {
 	}
 
 	/**
-	 * Writes the duration the key actually uses back to its settings when the stored value is missing or
-	 * unusable, so a new key's field shows 5 and a bad entry doesn't turn into 5 after a restart.
+	 * Writes what the key actually uses back to its settings when the stored value is missing or unusable,
+	 * so a new key's fields show it (5 minutes, the kind's default color) and a bad duration entry doesn't
+	 * turn into 5 after a restart.
 	 */
-	#saveEffectiveDuration(action: { id: string; setSettings(s: PresetSettings): Promise<void> }, settings: PresetSettings): void {
-		if (parseDuration(settings.durationMinutes) !== undefined) return;
-		const durationMinutes = String(this.#controller.presetMinutes(action.id));
-		action.setSettings({ ...settings, durationMinutes }).catch((err: unknown) => streamDeck.logger.error("setSettings failed", err));
+	#saveEffectiveSettings(key: SettingsTarget, settings: PresetSettings, kind: TimerKind): void {
+		const fill: PresetSettings = {};
+		if (parseDuration(settings.durationMinutes) === undefined) fill.durationMinutes = String(this.#controller.presetMinutes(key.id));
+		if (typeof settings.color !== "string") fill.color = defaultColorFor(kind);
+		if (Object.keys(fill).length === 0) return;
+		key.setSettings({ ...settings, ...fill }).catch((err: unknown) => streamDeck.logger.error("setSettings failed", err));
+	}
+}
+
+/** Forwards one action's key and settings events to the shared TimerKeys, tagged with the action's kind. */
+abstract class TimerAction extends SingletonAction<PresetSettings> {
+	constructor(
+		private readonly timer: TimerKeys,
+		private readonly kind: TimerKind,
+	) {
+		super();
+	}
+
+	override onWillAppear(ev: WillAppearEvent<PresetSettings>): void {
+		if (ev.action.isKey()) this.timer.appeared(ev.action, ev.payload.settings, this.kind);
+	}
+
+	override onWillDisappear(ev: WillDisappearEvent<PresetSettings>): void {
+		this.timer.disappeared(ev.action.id);
+	}
+
+	/** Fired when the Property Inspector saves this key's settings. */
+	override onDidReceiveSettings(ev: DidReceiveSettingsEvent<PresetSettings>): void {
+		this.timer.settingsChanged(ev.action.id, ev.payload.settings);
+	}
+
+	override onPropertyInspectorDidDisappear(ev: PropertyInspectorDidDisappearEvent<PresetSettings>): void {
+		if (ev.action.isKey()) this.timer.inspectorClosed(ev.action, this.kind);
+	}
+
+	override onPropertyInspectorDidAppear(_ev: PropertyInspectorDidAppearEvent<PresetSettings>): void {
+		this.timer.inspectorOpened();
+	}
+
+	override onSendToPlugin(ev: SendToPluginEvent<{ event: string }, PresetSettings>): Promise<void> {
+		return this.timer.messageFromInspector(ev.payload);
+	}
+
+	override onKeyDown(ev: KeyDownEvent<PresetSettings>): void {
+		this.timer.keyDown(ev.action.id);
+	}
+
+	override onKeyUp(ev: KeyUpEvent<PresetSettings>): void {
+		this.timer.keyUp(ev.action.id);
+	}
+}
+
+/** A focus timer key: switches Focus when that is turned on. */
+@action({ UUID: PRESET_ACTION_UUID })
+export class PresetTimerAction extends TimerAction {
+	constructor(timer: TimerKeys) {
+		super(timer, "focus");
+	}
+}
+
+/** A break timer key: shares the one timer with the preset keys but never turns Focus on. */
+@action({ UUID: BREAK_ACTION_UUID })
+export class BreakTimerAction extends TimerAction {
+	constructor(timer: TimerKeys) {
+		super(timer, "break");
 	}
 }

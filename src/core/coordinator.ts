@@ -1,4 +1,4 @@
-import { type KeyStyle, parseKeyStyle } from "./key-style";
+import { BREAK_DEFAULT_COLOR, DEFAULT_COLOR, type KeyStyle, parseKeyStyle } from "./key-style";
 import type { Clock } from "./clock";
 
 /**
@@ -6,6 +6,19 @@ import type { Clock } from "./clock";
  * so a duration may arrive as either a number or a numeric string. `color` and `font` only change the key's look.
  */
 export type PresetSettings = { durationMinutes?: number | string; color?: string; font?: string };
+
+/**
+ * Which action a key is: a focus timer (the Timer Preset action) or a break timer (the Break action). Both
+ * share the one session; only focus sessions switch Focus. Sessions and events carry `kind: "break"` only
+ * for breaks, so a session saved before breaks existed reads as a focus session.
+ */
+export type TimerKind = "focus" | "break";
+type KindMark = { kind?: "break" };
+
+/** The default color of a key of this kind that has none chosen. */
+export function defaultColorFor(kind: TimerKind): string {
+	return kind === "break" ? BREAK_DEFAULT_COLOR : DEFAULT_COLOR;
+}
 
 /** What one key should show. `style` is the key's own color and font, independent of the timer. */
 export type KeyRender = (
@@ -21,14 +34,17 @@ export type KeyRender = (
  * Replacing a running or paused session with another preset reports only `replaced`, never `completed` or
  * `cancelled`; `replaced` also starts the new session, so treat it as a start for `keyId`.
  */
-export type SessionEvent =
+export type SessionEvent = (
 	| { type: "started"; keyId: string; sessionId: number; durationMs: number }
 	| { type: "paused"; keyId: string; sessionId: number }
 	| { type: "resumed"; keyId: string; sessionId: number }
 	| { type: "cancelled"; keyId: string; sessionId: number }
 	| { type: "completed"; keyId: string; sessionId: number; durationMs: number }
 	/** A new session (new `sessionId`) took over from one that was running or paused on `fromKeyId`. */
-	| { type: "replaced"; keyId: string; sessionId: number; durationMs: number; fromKeyId: string; fromState: "running" | "paused" };
+	| { type: "replaced"; keyId: string; sessionId: number; durationMs: number; fromKeyId: string; fromState: "running" | "paused" }
+) &
+	/** The kind of the event's session (`sessionId`); absent for focus sessions. */
+	KindMark;
 
 export type Output = { renders: KeyRender[]; events: SessionEvent[] };
 
@@ -45,7 +61,7 @@ const MINUTE_MS = 60_000;
  * paused stores the frozen remaining time. `id` is unique per start and kept through pause, resume
  * and completion. Plain data, so it can be saved and restored across restarts.
  */
-export type Session = { id: number; keyId: string; durationMs: number } & (
+export type Session = { id: number; keyId: string; durationMs: number } & KindMark & (
 	| { status: "running"; endsAt: number }
 	| { status: "paused"; remainingMs: number }
 	| { status: "completed" }
@@ -75,6 +91,8 @@ export class TimerCoordinator {
 	readonly #durations = new Map<string, number>();
 	/** Validated color and font of each visible key. */
 	readonly #styles = new Map<string, KeyStyle>();
+	/** Which action each visible key is. */
+	readonly #kinds = new Map<string, TimerKind>();
 	/** The render each visible key last received, so unchanged keys are not redrawn. */
 	readonly #shown = new Map<string, KeyRender>();
 	readonly #presses = new Map<string, Press>();
@@ -99,10 +117,11 @@ export class TimerCoordinator {
 		return { lastSessionId: this.#lastSessionId, session: this.#session === undefined ? undefined : { ...this.#session } };
 	}
 
-	/** A key became visible. An unusable duration falls back to the default. */
-	keyAppeared(keyId: string, settings: PresetSettings): Output {
+	/** A key of this kind became visible. An unusable duration falls back to the default. */
+	keyAppeared(keyId: string, settings: PresetSettings, kind: TimerKind = "focus"): Output {
+		this.#kinds.set(keyId, kind);
 		this.#durations.set(keyId, parseDuration(settings.durationMinutes) ?? DEFAULT_DURATION_MINUTES);
-		this.#styles.set(keyId, parseKeyStyle(settings));
+		this.#styles.set(keyId, parseKeyStyle(settings, defaultColorFor(kind)));
 		this.#shown.delete(keyId);
 		return this.#output();
 	}
@@ -116,13 +135,14 @@ export class TimerCoordinator {
 		if (!this.#durations.has(keyId)) return this.#output();
 		const minutes = parseDuration(settings.durationMinutes);
 		if (minutes !== undefined) this.#durations.set(keyId, minutes);
-		this.#styles.set(keyId, parseKeyStyle(settings));
+		this.#styles.set(keyId, parseKeyStyle(settings, defaultColorFor(this.#kinds.get(keyId) ?? "focus")));
 		return this.#output();
 	}
 
 	keyDisappeared(keyId: string): void {
 		this.#durations.delete(keyId);
 		this.#styles.delete(keyId);
+		this.#kinds.delete(keyId);
 		this.#shown.delete(keyId);
 		this.#presses.delete(keyId);
 	}
@@ -167,11 +187,11 @@ export class TimerCoordinator {
 		if (!sameMark(press.pressed, this.#markFor(keyId))) return this.#output();
 		const session = this.#session;
 		if (session?.keyId === keyId && session.status === "running") {
-			this.#session = { id: session.id, keyId, durationMs: session.durationMs, status: "paused", remainingMs: this.#remainingMs(session) };
-			this.#events.push({ type: "paused", keyId, sessionId: session.id });
+			this.#session = { ...base(session), status: "paused", remainingMs: this.#remainingMs(session) };
+			this.#events.push({ type: "paused", keyId, sessionId: session.id, ...kindOf(session) });
 		} else if (session?.keyId === keyId && session.status === "paused") {
-			this.#session = { id: session.id, keyId, durationMs: session.durationMs, status: "running", endsAt: this.clock.now() + session.remainingMs };
-			this.#events.push({ type: "resumed", keyId, sessionId: session.id });
+			this.#session = { ...base(session), status: "running", endsAt: this.clock.now() + session.remainingMs };
+			this.#events.push({ type: "resumed", keyId, sessionId: session.id, ...kindOf(session) });
 		} else {
 			this.#start(keyId);
 		}
@@ -204,11 +224,12 @@ export class TimerCoordinator {
 		const durationMs = this.#durationMinutes(keyId) * MINUTE_MS;
 		const previous = this.#session;
 		const sessionId = ++this.#lastSessionId;
-		this.#session = { id: sessionId, keyId, durationMs, status: "running", endsAt: this.clock.now() + durationMs };
+		const kind: KindMark = this.#kinds.get(keyId) === "break" ? { kind: "break" } : {};
+		this.#session = { id: sessionId, keyId, durationMs, ...kind, status: "running", endsAt: this.clock.now() + durationMs };
 		if (previous !== undefined && previous.status !== "completed") {
-			this.#events.push({ type: "replaced", keyId, sessionId, durationMs, fromKeyId: previous.keyId, fromState: previous.status });
+			this.#events.push({ type: "replaced", keyId, sessionId, durationMs, fromKeyId: previous.keyId, fromState: previous.status, ...kind });
 		} else {
-			this.#events.push({ type: "started", keyId, sessionId, durationMs });
+			this.#events.push({ type: "started", keyId, sessionId, durationMs, ...kind });
 		}
 	}
 
@@ -217,7 +238,7 @@ export class TimerCoordinator {
 		const session = this.#session;
 		if (session?.keyId !== keyId) return;
 		this.#session = undefined;
-		if (session.status !== "completed") this.#events.push({ type: "cancelled", keyId, sessionId: session.id });
+		if (session.status !== "completed") this.#events.push({ type: "cancelled", keyId, sessionId: session.id, ...kindOf(session) });
 	}
 
 	/** Applies time-driven transitions: completion, then any hold that has reached its threshold. */
@@ -225,8 +246,8 @@ export class TimerCoordinator {
 		const now = this.clock.now();
 		const session = this.#session;
 		if (session?.status === "running" && now >= session.endsAt) {
-			this.#session = { id: session.id, keyId: session.keyId, durationMs: session.durationMs, status: "completed" };
-			this.#events.push({ type: "completed", keyId: session.keyId, sessionId: session.id, durationMs: session.durationMs });
+			this.#session = { ...base(session), status: "completed" };
+			this.#events.push({ type: "completed", keyId: session.keyId, sessionId: session.id, durationMs: session.durationMs, ...kindOf(session) });
 		}
 		for (const press of this.#presses.values()) {
 			if (press.resolved || now - press.downAt < HOLD_MS || this.#session?.keyId !== press.keyId) continue;
@@ -269,7 +290,7 @@ export class TimerCoordinator {
 	}
 
 	#renderFor(keyId: string): KeyRender {
-		const style = this.#styles.get(keyId) ?? parseKeyStyle({});
+		const style = this.#styles.get(keyId) ?? parseKeyStyle({}, defaultColorFor(this.#kinds.get(keyId) ?? "focus"));
 		const session = this.#session;
 		if (session?.keyId !== keyId) return { keyId, state: "idle", minutes: this.#durationMinutes(keyId), style };
 		if (session.status === "completed") return { keyId, state: "done", minutes: 0, style };
@@ -293,6 +314,16 @@ export function parseDuration(value: unknown): number | undefined {
 /** Remaining fraction rounded up to the next ring step, so the ring is full at start and empty only at completion. */
 function ringFraction(remainingMs: number, durationMs: number): number {
 	return Math.ceil((remainingMs / durationMs) * RING_STEPS) / RING_STEPS;
+}
+
+/** A session's identity, length and kind, without its status. */
+function base(session: Session): { id: number; keyId: string; durationMs: number } & KindMark {
+	return { id: session.id, keyId: session.keyId, durationMs: session.durationMs, ...kindOf(session) };
+}
+
+/** `{ kind: "break" }` for a break session, else nothing: what its events carry. */
+export function kindOf(session: KindMark): KindMark {
+	return session.kind === "break" ? { kind: "break" } : {};
 }
 
 function sameMark(a: SessionMark | undefined, b: SessionMark | undefined): boolean {
