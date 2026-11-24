@@ -1,6 +1,6 @@
 # Focus Keys user guide
 
-Focus Keys turns Stream Deck keys into whole-minute countdown timers. Each key is one preset (for example 5, 15, 25 or 50 minutes). All keys share one timer: starting one key replaces whatever another key was running. The key shows the minutes left and a ring for the remaining fraction. It never shows seconds.
+Focus Keys turns Stream Deck keys into whole-minute countdown timers. Each key is one preset (for example 5, 15, 30 or 60 minutes). All keys share one timer: starting one key replaces whatever another key was running. The key shows the minutes left and a ring for the remaining fraction. It never shows seconds.
 
 ## Requirements
 
@@ -19,7 +19,7 @@ Updating works the same way: double-click the newer file. Keys and their setting
 ## Set up four keys
 
 1. Drag **Timer Preset** onto four keys. Each new key shows a large tomato-colored **5**.
-2. Select each key and set **Minutes** in the Property Inspector, for example **5**, **15**, **25** and **50**. The field saves when you press Enter, click away, or close the Property Inspector.
+2. Select each key and set **Minutes** in the Property Inspector, for example **5**, **15**, **30** and **60**. The field saves when you press Enter, click away, or close the Property Inspector.
 3. Optionally give each key its own **Color** and **Font**.
 4. Optionally drag **Break** onto a fifth key for breaks. It starts teal and works like a preset key, but never turns Focus on (see below).
 5. Optionally set up a completion sound or notification and Focus switching (below). Those settings are shared by all timer keys.

@@ -26,17 +26,17 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 ## 2. Four-key timer
 
 - [ ] 1. Drag **Timer Preset** onto four Neo keys. Each shows a large tomato **5** on a dark background, no ring.
-- [ ] 2. Set **Minutes** to **5**, **15**, **25** and **50** (Enter or click away after each). Each key's number updates.
+- [ ] 2. Set **Minutes** to **5**, **15**, **30** and **60** (Enter or click away after each). Each key's number updates.
 - [ ] 3. Type an unusable value (empty, `0`, `200`) and click away. The key keeps its previous number. Close and reopen the Property Inspector: the field shows the key's number.
 - [ ] 4. Press **5**. A ring appears and the number stays **5**. Over a minute the ring shrinks and the number becomes **4** when four minutes remain. No seconds ever.
 - [ ] 5. Tap the running key: ring turns muted and stops, number dims. Wait a minute, tap again: ring regains its color and the countdown continues from where it paused.
 - [ ] 6. Hold the running key: at about half a second it returns to **5** while your finger is still down; releasing does nothing more. Repeat with a paused key.
-- [ ] 7. Start **15**, then press **25**. The 15 key shows **15** again and 25 counts. No alert.
+- [ ] 7. Start **15**, then press **30**. The 15 key shows **15** again and 30 counts. No alert.
 - [ ] 8. Switch to another page and back while a timer runs. The key shows the current countdown.
 - [ ] 9. Let a 1-minute key finish. It shows **0** with no ring and stays there. Tap it: a fresh countdown starts. Let it finish again and hold it: it clears to its idle number.
 - [ ] 10. While a timer runs, change that key's minutes. The countdown continues unchanged. Hold to cancel; the key now shows the new value.
 - [ ] 11. Quit and reopen Stream Deck. All four keys show their saved durations.
-- [ ] 12. Drag **Break** onto a fifth key: it shows a teal **5**, and its Property Inspector shows Color teal. Start a 25 key, then press Break: the 25 key goes idle and Break counts. Let Break finish: sound plays, key shows **0**.
+- [ ] 12. Drag **Break** onto a fifth key: it shows a teal **5**, and its Property Inspector shows Color teal. Start a 30 key, then press Break: the 30 key goes idle and Break counts. Let Break finish: sound plays, key shows **0**.
 
 ## 3. Appearance per font and color
 
