@@ -51,6 +51,7 @@ npm run glyphs       # regenerates src/render/glyphs.generated.ts and the font l
 - `src/core/alerts.ts` validates the shared alert settings and decides what a completion does: which sound, and whether to show a notification with what text.
 - `src/actions/preset-controller.ts` wires everything without the SDK, so it is tested directly. It sends key events to the coordinator, paints its renders, passes its events to the alert dispatcher, and through `src/actions/wake-timer.ts` wakes at the exact moment the coordinator reports the next change: a ring step, a minute boundary, completion, or a hold reaching its threshold.
 - `src/alerts/dispatcher.ts` turns each `completed` event into a sound and/or notification, once per session. `src/alerts/macos.ts` plays sounds with `afplay` and shows notifications with `osascript`.
+- `src/core/focus.ts` validates the shared Focus settings and maps each session event to a Focus start or end. `src/focus/dispatcher.ts` runs the user's Focus shortcuts in order, at most one start and one end per focus session. `src/focus/shortcuts.ts` runs and lists shortcuts with `/usr/bin/shortcuts`; `src/focus/picker.ts` fills the Property Inspector's shortcut pickers. `src/focus/status.ts` keeps the Property Inspector's last-Focus-problem line.
 - `src/actions/preset-timer.ts` is the Stream Deck adapter. It forwards SDK key and settings events to the controller, paints keys with `setImage`, and reads the alert settings from the plugin's global settings.
 - `com.austinzani.neo-pomodoro.sdPlugin/ui/preset.html` is the Property Inspector. It uses [sdpi-components](https://sdpi-components.dev) v4.0.1, vendored in `ui/vendor/` so it works offline; its MIT and bundled Lit BSD-3-Clause licenses are in `ui/vendor/LICENSES.md`.
 
@@ -70,7 +71,7 @@ All preset keys share one session.
 
 Taps act on key release, so a hold is never also counted as a tap. If the hold wake-up runs late, the release still counts as a hold. If a session finishes while its key is held, the completion stands and the hold then clears the 0. If it finishes before a quick tap is released, including when a late wake-up after sleep finds it already over, the tap does nothing more: it doesn't start a new session. Likewise, a tap does nothing if another key replaced its session while it was down.
 
-The coordinator reports each transition once, as an event for the alert and Focus work (AUS-1882, AUS-1883) to use: `started`, `paused`, `resumed`, `cancelled`, `completed` (with the session id and length), and `replaced` (with the previous key and whether it was running or paused). `replaced` also starts the new session, so it counts as a start for the new key.
+The coordinator reports each transition once, as an event for the alert and Focus work (AUS-1882, AUS-1883) to use: `started`, `paused`, `resumed`, `cancelled`, `completed` (with the session's length), and `replaced` (with the previous key and whether it was running or paused). Every event carries its session id. `replaced` also starts the new session, with a new id, so it counts as a start for the new key.
 
 ### Completion alerts
 
@@ -168,6 +169,88 @@ Do this on the physical Neo at normal viewing distance. Compare against the cont
 6. Note any font or color that's hard to read on the Neo, so it can be swapped before release.
 
 Notes: the action has no title field, so a user title can't hide the number. A custom image set on the key in the Stream Deck app still overrides the plugin's image. If the number doesn't appear, clear any custom image on that key. A running session isn't restored after a restart yet; that's AUS-1884.
+
+### Focus
+
+Optional and off by default. macOS has no supported way for a plugin to set Focus directly, so the plugin runs **shortcuts you make in the Shortcuts app** with Apple's `shortcuts` command (`/usr/bin/shortcuts run -- <name>`, no shell, 30-second limit). Your shortcut does the switching with the Shortcuts **Set Focus** action. No private APIs or Focus databases are used.
+
+Setup:
+
+1. In the Shortcuts app, make a shortcut (for example "Pomodoro Focus On") with one **Set Focus** action: turn your work Focus **On**, until **Turned Off**.
+2. Optionally make a second one (for example "Pomodoro Focus Off") with **Set Focus** turning Focus **Off**.
+3. Open any timer key's Property Inspector. In **Focus — shared by all timer keys**, check **Switch Focus with the timer**, pick the first shortcut under **On start** and the second under **On end** (or **Leave Focus as it is**). The pickers list your shortcuts; use the refresh button after adding one. A chosen shortcut that was renamed or deleted shows "(not found)".
+4. The first run may ask for permission (for example to let Shortcuts change Focus, or to let Stream Deck run shortcuts). Allow it; until then the shortcut fails and the key shows an alert.
+
+When each shortcut runs. Focus follows the focus session, not a key:
+
+| Timer event | Focus |
+| --- | --- |
+| Start | Runs **On start** |
+| Pause, cancel (hold), finish | Runs **On end**, or leaves Focus as it is if none is chosen |
+| Resume | Runs **On start** |
+| Another preset replaces running work | Nothing: the focus session continues |
+| Another preset replaces paused work | Runs **On start** (the pause already ran **On end**) |
+| Focus switching off | Nothing ever runs |
+
+Each focus session runs **On start** at most once and **On end** at most once. Events are deduplicated by session id: a repeated start or finish, or a late event from an earlier session, changes nothing. **On end** only follows an **On start** that this plugin ran, so it never turns off a Focus the timer didn't turn on (exact rule under Limits). Turning switching off mid-session means **On end** doesn't run. Shortcuts run one at a time in the order the timer events happened, in the background: a slow shortcut never delays the countdown, and an end always waits for its start. While a shortcut is still running, only the latest timer change waits behind it; an older waiting one is dropped, because Focus only needs to end up matching the timer. So pausing and resuming repeatedly while a shortcut hangs runs at most one more shortcut, and a waiting start that a pause replaces never runs.
+
+Limits:
+
+- **Your previous Focus is not restored.** At the end the plugin runs your **On end** shortcut (or leaves Focus alone). Apple documents **Get Current Focus** (macOS 13) only as "checking current Focus status". It has not yet been shown on this Mac that it returns a Focus that can be fed back into **Set Focus**, or how "no Focus" looks. Restoring stays off until the owner prototype below proves it.
+- **Changes you make by hand aren't detected.** If you switch Focus during a timer, **On end** still runs when the timer pauses or finishes, and it may undo your change. Whether a "Focus off" shortcut also turns off a different Focus you chose by hand is not yet tested (prototype Q5). The plugin can't tell a scheduled change from a manual one. Choose **Leave Focus as it is** to avoid this.
+- **On end needs On start.** **On end** runs only if this focus session's **On start** finished successfully or hit the 30-second limit (a shortcut stopped at the limit may already have set Focus, so it counts as started). It doesn't run when **On start** is **None**, switching was off at the start, the start shortcut was missing or failed with an error, or the settings couldn't be read at the start.
+- **Shortcut names are trimmed.** A shortcut whose name starts or ends with spaces can't be chosen; rename it in the Shortcuts app.
+- **The "No shortcut named …" message relies on the `shortcuts` command's English error text** ("Couldn't find shortcut"). In another macOS language a missing shortcut is reported with the command's own error instead.
+- **Focus syncs across devices.** If **Share across devices** is on in System Settings › Focus, these changes also apply to your iPhone, iPad and other Macs.
+- A Focus may hide the completion banner unless **Script Editor** is allowed in that Focus (see Completion alerts). The sound is played with `afplay` and isn't affected.
+- A shortcut that asks a question waits for an answer. The plugin stops it after 30 seconds and reports a timeout (then still runs **On end**, as above).
+
+When a shortcut can't run (missing or renamed shortcut, an error inside it, permission denied, 30-second timeout, or no `shortcuts` command), or the Focus settings can't be read when work starts, the timer carries on. The key that started the session shows Stream Deck's alert triangle briefly. The Focus section of the Property Inspector shows the latest problem, such as `No shortcut named "Pomodoro Focus On" in the Shortcuts app`, until a shortcut next runs successfully or you change the Focus settings; the plugin log has the details. An unreadable-settings alert is skipped when switching was off the last time the settings were read.
+
+Restoring later, by this rule: add a **Restore previous Focus** end option only if the prototype shows all of these:
+
+1. **Get Current Focus** returns, through `shortcuts run … --output-path -`, a non-empty value that differs for each Focus and has a distinct, stable value for "no Focus".
+2. Feeding that value back into a **Set Focus** shortcut restores every tested Focus and "no Focus", three times out of three.
+3. It needs no prompt after the first run and finishes within a few seconds.
+4. The follow-up that adds the option repeats checks 1 and 2 from the plugin (the Stream Deck process) before shipping, since its permissions can differ from Terminal's.
+
+Manual-change protection needs the same readback. At the end the plugin would read the current Focus and skip **On end** if it's no longer the one the plugin set. `ShortcutRunner` would then gain an output-capturing run; the dispatcher already knows when it started a focus session.
+
+### Owner prototype: Focus via Shortcuts (AUS-1883)
+
+This changes Focus on the Mac and, with sharing on, on synced devices. Takes about 10 minutes.
+
+1. In the Shortcuts app, create:
+   - **Neo Pomodoro Test - Get Focus**: **Get Current Focus**, then **Stop and Output** the result (as text if offered).
+   - **Neo Pomodoro Test - Focus On**: **Set Focus** to your work Focus, **On**, until **Turned Off**.
+   - **Neo Pomodoro Test - Focus Off**: **Set Focus**, **Off**.
+   - **Neo Pomodoro Test - Set Focus From Input**: receives text input; **Set Focus** with the Focus set to **Shortcut Input** (if the action can't take a variable there, note it: that alone answers Q4 "no"). If the input is empty, turn Focus off.
+2. In Terminal, in this repo: `node scripts/focus-prototype.mjs`. Follow the prompts. Every run's exit code, output, error and time goes to `focus-prototype-<time>.jsonl`.
+3. What the results answer:
+   - Q1 Focus identity: the `get-current` lines for Do Not Disturb, work and a third Focus. Is the output a name, and is it the same both times?
+   - Q2 No Focus: the `get-current: NO Focus` lines. Empty, an error, or text?
+   - Q3 Switching: `focus-on`/`focus-off` exit 0, times, and your yes/no.
+   - Q4 Restoring: the `restore:` lines. Does the read-back match the capture, including NO Focus?
+   - Q5 Manual and scheduled changes: `manual: read after hand change` and `scheduled: …` show whether a change is visible (only by reading; there is no change notification). Your answers show what **On end** does to it.
+   - Q6 Permissions: your notes on prompts during the first runs.
+   - Q7 Banners: whether the Script Editor banner showed with the work Focus on.
+4. Then check the plugin itself: set **On start**/**On end** to the Focus On/Off test shortcuts and follow the owner checklist below. The plugin runs shortcuts from the Stream Deck process, and its permissions can differ from Terminal's.
+
+Send the `.jsonl` file back. If it meets the restoring rule above, a follow-up can add the restore option. Otherwise the current fallback stays.
+
+### Owner check on the Mac: Focus (AUS-1883)
+
+1. Open a timer key's Property Inspector. **Focus — shared by all timer keys** shows switching unchecked. Start and finish a 1-minute timer: Focus doesn't change.
+2. Check switching, set **On start** to your Focus On shortcut and **On end** to your Focus Off shortcut. The pickers list your shortcuts.
+3. Start a timer. Your work Focus turns on within a second or two (accept any permission prompt and note it). Pause: Focus turns off. Resume: on again. Let it finish: off.
+4. Start one key, then press another key while it runs. Focus stays on, with no off-then-on flicker. Pause, then press a third key: Focus comes back on. Hold to cancel: off.
+5. Set **On end** to **Leave Focus as it is**. Start and finish a timer: Focus turns on and stays on. Turn it off by hand.
+6. Start a timer, then switch to Do Not Disturb by hand. When the timer finishes, **On end** runs anyway. Note whether it turned your Do Not Disturb off.
+7. Rename the Focus On shortcut in the Shortcuts app and start a timer. The countdown runs normally, the key flashes an alert, and the Property Inspector shows `No shortcut named …`. The picker shows the old name with "(not found)". Rename it back.
+8. Uncheck switching mid-timer. When the timer ends, Focus is left on.
+9. With the work Focus on and the notification enabled, let a timer finish with **On end** set to **Leave Focus as it is**. Note whether the Script Editor banner appears; the sound plays either way.
+10. If **Share across devices** is on, confirm your iPhone follows, then decide whether that's acceptable.
+11. Check the plugin log for `Focus shortcut … failed` only where expected.
 
 ### Owner check on the Mac: completion alerts (AUS-1882)
 

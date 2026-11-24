@@ -94,6 +94,36 @@
 			sound work either way.
 		</p>
 
+		<!--
+			Focus is plugin global settings too. The plugin runs shortcuts the user made in the Shortcuts app; the
+			pickers are filled by the plugin from `shortcuts list` (datasource names: SHORTCUT_PICKERS in
+			src/focus/picker.ts; settings: FocusSettings in src/core/focus.ts). Off unless checked.
+		-->
+		<div class="section">Focus — shared by all timer keys</div>
+		<sdpi-item label="Focus">
+			<sdpi-checkbox setting="focusEnabled" global label="Switch Focus with the timer"></sdpi-checkbox>
+		</sdpi-item>
+		<sdpi-item label="On start">
+			<sdpi-select setting="focusStartShortcut" global datasource="focusStartShortcuts" show-refresh loading="Loading shortcuts…"></sdpi-select>
+		</sdpi-item>
+		<sdpi-item label="On end">
+			<sdpi-select setting="focusEndShortcut" global datasource="focusEndShortcuts" show-refresh loading="Loading shortcuts…"></sdpi-select>
+		</sdpi-item>
+		<p class="note" id="focusStatus" hidden></p>
+		<p class="note">
+			The plugin can't set Focus itself; it runs your shortcuts. In the Shortcuts app, make one with
+			<b>Set Focus</b> turning your work Focus on (run on start and resume), and optionally one turning
+			Focus off (run on pause, cancel and finish). With no end shortcut, Focus is left as it is. The end
+			shortcut only runs after the start shortcut ran, or was stopped at the 30-second limit (it may have
+			set Focus already); not after it was missing or failed.
+		</p>
+		<p class="note">
+			Your previous Focus is <b>not</b> restored, and a Focus you change by hand (or by schedule) during a
+			timer is not detected: the end shortcut runs anyway and may change it. Switching to another preset keeps Focus on. If “Share across
+			devices” is on in Focus settings, these changes also apply to your other Apple devices. A Focus may
+			hide the completion banner unless Script Editor is allowed; the sound still plays.
+		</p>
+
 		<script>
 			// Text entries have no `setting` attribute: sdpi-textfield and sdpi-textarea would save on every
 			// keystroke, so typing 60 would briefly save 6, and each keystroke in the notification text would
@@ -132,6 +162,17 @@
 				null,
 			);
 			commitOnBlur(notificationText, saveNotificationText, { enter: false });
+
+			// The plugin reports the latest failed Focus shortcut (missing shortcut, error, timeout); shown as text.
+			const focusStatus = document.getElementById("focusStatus");
+			SDPIComponents.streamDeckClient.sendToPropertyInspector.subscribe(({ payload }) => {
+				if (payload?.event !== "focusStatus") return;
+				focusStatus.textContent = payload.message ? `Last Focus problem — ${payload.message}` : "";
+				focusStatus.hidden = !payload.message;
+			});
+			// The plugin also pushes it when the inspector appears, which can arrive before this page is
+			// connected; asking once loaded makes sure the line is current. The plugin replies with focusStatus.
+			SDPIComponents.streamDeckClient.send("sendToPlugin", { event: "focusStatus" }).catch((err) => console.error("focusStatus request failed", err));
 		</script>
 	</body>
 </html>

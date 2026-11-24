@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { SHORTCUT_PICKERS } from "../src/focus/picker";
 import { piSource, runPiScript } from "./support";
 
 describe("Property Inspector notification text", () => {
@@ -40,5 +41,38 @@ describe("Property Inspector duration", () => {
 
 	it("commits without the sdpi debounce", () => {
 		expect(runPiScript().delays).toEqual([null, null]);
+	});
+});
+
+describe("Property Inspector Focus section", () => {
+	const tag = (setting: string) => new RegExp(`<sdpi-[a-z]+[^>]*setting="${setting}"[^>]*>`).exec(piSource())?.[0] ?? "";
+
+	it("saves every Focus setting as a shared global setting, off unless checked", () => {
+		expect(tag("focusEnabled")).toMatch(/^<sdpi-checkbox[^>]*\sglobal\b/);
+		expect(tag("focusEnabled")).not.toMatch(/default=/);
+		expect(tag("focusStartShortcut")).toMatch(/\sglobal\b/);
+		expect(tag("focusEndShortcut")).toMatch(/\sglobal\b/);
+	});
+
+	it("fills each shortcut picker from the plugin's matching data source", () => {
+		const sources = [tag("focusStartShortcut"), tag("focusEndShortcut")].map((t) => /datasource="([^"]+)"/.exec(t)?.[1]);
+		expect(sources).toEqual(Object.keys(SHORTCUT_PICKERS));
+		expect(Object.values(SHORTCUT_PICKERS)).toEqual(["start", "end"]);
+	});
+
+	it("asks the plugin for the latest Focus problem when it loads, so it never misses one sent before it connected", () => {
+		expect(runPiScript().sent).toEqual([{ event: "sendToPlugin", payload: { event: "focusStatus" } }]);
+	});
+
+	it("shows the plugin's latest Focus problem as plain text, and hides the line when there is none", () => {
+		const pi = runPiScript();
+		const status = pi.field("focusStatus");
+		pi.fromPlugin({ event: "focusStatus", message: 'No shortcut named "<b>Work</b>"' });
+		expect(status.textContent).toBe('Last Focus problem — No shortcut named "<b>Work</b>"');
+		expect(status.hidden).toBe(false);
+		pi.fromPlugin({ event: "focusStatus", message: "" });
+		expect(status.hidden).toBe(true);
+		pi.fromPlugin({ event: "focusStartShortcuts", items: [] });
+		expect(status.hidden).toBe(true);
 	});
 });

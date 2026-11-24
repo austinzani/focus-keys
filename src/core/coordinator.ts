@@ -22,12 +22,13 @@ export type KeyRender = (
  * `cancelled`; `replaced` also starts the new session, so treat it as a start for `keyId`.
  */
 export type SessionEvent =
-	| { type: "started"; keyId: string; durationMs: number }
-	| { type: "paused"; keyId: string }
-	| { type: "resumed"; keyId: string }
-	| { type: "cancelled"; keyId: string }
+	| { type: "started"; keyId: string; sessionId: number; durationMs: number }
+	| { type: "paused"; keyId: string; sessionId: number }
+	| { type: "resumed"; keyId: string; sessionId: number }
+	| { type: "cancelled"; keyId: string; sessionId: number }
 	| { type: "completed"; keyId: string; sessionId: number; durationMs: number }
-	| { type: "replaced"; keyId: string; durationMs: number; fromKeyId: string; fromState: "running" | "paused" };
+	/** A new session (new `sessionId`) took over from one that was running or paused on `fromKeyId`. */
+	| { type: "replaced"; keyId: string; sessionId: number; durationMs: number; fromKeyId: string; fromState: "running" | "paused" };
 
 export type Output = { renders: KeyRender[]; events: SessionEvent[] };
 
@@ -140,10 +141,10 @@ export class TimerCoordinator {
 		const session = this.#session;
 		if (session?.keyId === keyId && session.status === "running") {
 			this.#session = { id: session.id, keyId, durationMs: session.durationMs, status: "paused", remainingMs: this.#remainingMs(session) };
-			this.#events.push({ type: "paused", keyId });
+			this.#events.push({ type: "paused", keyId, sessionId: session.id });
 		} else if (session?.keyId === keyId && session.status === "paused") {
 			this.#session = { id: session.id, keyId, durationMs: session.durationMs, status: "running", endsAt: this.clock.now() + session.remainingMs };
-			this.#events.push({ type: "resumed", keyId });
+			this.#events.push({ type: "resumed", keyId, sessionId: session.id });
 		} else {
 			this.#start(keyId);
 		}
@@ -175,11 +176,12 @@ export class TimerCoordinator {
 	#start(keyId: string): void {
 		const durationMs = this.#durationMinutes(keyId) * MINUTE_MS;
 		const previous = this.#session;
-		this.#session = { id: ++this.#lastSessionId, keyId, durationMs, status: "running", endsAt: this.clock.now() + durationMs };
+		const sessionId = ++this.#lastSessionId;
+		this.#session = { id: sessionId, keyId, durationMs, status: "running", endsAt: this.clock.now() + durationMs };
 		if (previous !== undefined && previous.status !== "completed") {
-			this.#events.push({ type: "replaced", keyId, durationMs, fromKeyId: previous.keyId, fromState: previous.status });
+			this.#events.push({ type: "replaced", keyId, sessionId, durationMs, fromKeyId: previous.keyId, fromState: previous.status });
 		} else {
-			this.#events.push({ type: "started", keyId, durationMs });
+			this.#events.push({ type: "started", keyId, sessionId, durationMs });
 		}
 	}
 
@@ -188,7 +190,7 @@ export class TimerCoordinator {
 		const session = this.#session;
 		if (session?.keyId !== keyId) return;
 		this.#session = undefined;
-		if (session.status !== "completed") this.#events.push({ type: "cancelled", keyId });
+		if (session.status !== "completed") this.#events.push({ type: "cancelled", keyId, sessionId: session.id });
 	}
 
 	/** Applies time-driven transitions: completion, then any hold that has reached its threshold. */

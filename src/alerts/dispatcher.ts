@@ -77,7 +77,7 @@ export class AlertDispatcher {
 }
 
 /** Settles like `promise`, or rejects after `ms` if it hasn't settled by then. */
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const timeout = new Promise<never>((_, reject) => {
 		timer = setTimeout(() => reject(new Error(`timed out after ${ms} ms`)), ms);

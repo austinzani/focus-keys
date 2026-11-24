@@ -12,7 +12,7 @@ const completed = (sessionId: number, minutes = 5): SessionEvent => ({ type: "co
 describe("alert dispatcher", () => {
 	it("plays the selected sound once when a session completes", async () => {
 		const t = fakeAlertPorts({ sound: "hero" });
-		await t.dispatcher.handle([{ type: "started", keyId: "key-a", durationMs: 5 * MIN }, completed(1)]);
+		await t.dispatcher.handle([{ type: "started", keyId: "key-a", sessionId: 1, durationMs: 5 * MIN }, completed(1)]);
 		expect(t.played).toEqual(["hero"]);
 		expect(t.notified).toEqual([]);
 	});
@@ -20,11 +20,11 @@ describe("alert dispatcher", () => {
 	it("does nothing for transitions other than completion", async () => {
 		const t = fakeAlertPorts({ notificationEnabled: true });
 		await t.dispatcher.handle([
-			{ type: "started", keyId: "key-a", durationMs: 5 * MIN },
-			{ type: "paused", keyId: "key-a" },
-			{ type: "resumed", keyId: "key-a" },
-			{ type: "cancelled", keyId: "key-a" },
-			{ type: "replaced", keyId: "key-b", durationMs: 5 * MIN, fromKeyId: "key-a", fromState: "running" },
+			{ type: "started", keyId: "key-a", sessionId: 1, durationMs: 5 * MIN },
+			{ type: "paused", keyId: "key-a", sessionId: 1 },
+			{ type: "resumed", keyId: "key-a", sessionId: 1 },
+			{ type: "cancelled", keyId: "key-a", sessionId: 1 },
+			{ type: "replaced", keyId: "key-b", sessionId: 2, durationMs: 5 * MIN, fromKeyId: "key-a", fromState: "running" },
 		]);
 		expect(t.played).toEqual([]);
 		expect(t.notified).toEqual([]);

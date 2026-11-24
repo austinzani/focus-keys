@@ -3,14 +3,24 @@ import { execFile } from "node:child_process";
 import type { SoundId } from "../core/alerts";
 import type { Notifier, SoundPlayer } from "./dispatcher";
 
-/** Runs a program directly (no shell) and settles when it exits. */
-export type RunFile = (file: string, args: readonly string[], timeoutMs: number) => Promise<void>;
+/** Runs a program directly (no shell) and settles with its standard output when it exits. */
+export type RunFile = (file: string, args: readonly string[], timeoutMs: number) => Promise<string>;
 
-/** Resolves on exit 0; rejects on a non-zero exit, a failure to start, or after `timeoutMs` (the program is killed). */
+/** A program was killed because it ran past its time limit. */
+export class TimedOutError extends Error {
+	override readonly name = "TimedOutError";
+}
+
+/**
+ * Resolves on exit 0; rejects on a non-zero exit, a failure to start, output beyond Node's default
+ * `maxBuffer` (the program is killed), or with TimedOutError after `timeoutMs` (the program is killed).
+ */
 export const runFile: RunFile = (file, args, timeoutMs) =>
 	new Promise((resolve, reject) => {
-		execFile(file, [...args], { timeout: timeoutMs }, (err, _stdout, stderr) => {
-			if (err === null) resolve();
+		execFile(file, [...args], { timeout: timeoutMs }, (err, stdout, stderr) => {
+			if (err === null) resolve(String(stdout));
+			else if ((err as { code?: unknown }).code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") reject(new Error(`${file} wrote more output than allowed (${err.message})`));
+			else if (err.killed) reject(new TimedOutError(`${file} timed out after ${timeoutMs} ms`));
 			else reject(new Error(`${file} failed: ${err.message}${stderr ? ` (${String(stderr).trim()})` : ""}`));
 		});
 	});
@@ -24,9 +34,9 @@ const NOTIFY_TIMEOUT_MS = 10_000;
 export class AfplaySoundPlayer implements SoundPlayer {
 	constructor(private readonly run: RunFile = runFile) {}
 
-	play(sound: SoundId): Promise<void> {
+	async play(sound: SoundId): Promise<void> {
 		const file = `${SOUNDS_DIR}/${sound[0].toUpperCase()}${sound.slice(1)}.aiff`;
-		return this.run("/usr/bin/afplay", [file], SOUND_TIMEOUT_MS);
+		await this.run("/usr/bin/afplay", [file], SOUND_TIMEOUT_MS);
 	}
 }
 
@@ -42,8 +52,8 @@ export class OsascriptNotifier implements Notifier {
 
 	constructor(private readonly run: RunFile = runFile) {}
 
-	notify(title: string, body: string): Promise<void> {
+	async notify(title: string, body: string): Promise<void> {
 		const lines = OsascriptNotifier.SCRIPT.flatMap((line) => ["-e", line]);
-		return this.run("/usr/bin/osascript", [...lines, "--", body, title], NOTIFY_TIMEOUT_MS);
+		await this.run("/usr/bin/osascript", [...lines, "--", body, title], NOTIFY_TIMEOUT_MS);
 	}
 }

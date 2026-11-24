@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { AfplaySoundPlayer, OsascriptNotifier, runFile } from "../src/alerts/macos";
+import { AfplaySoundPlayer, OsascriptNotifier, runFile, TimedOutError } from "../src/alerts/macos";
 import { SOUND_IDS } from "../src/core/alerts";
 
 function recordingRun() {
 	const calls: { file: string; args: readonly string[] }[] = [];
-	const run = async (file: string, args: readonly string[]) => void calls.push({ file, args });
+	const run = async (file: string, args: readonly string[]) => (calls.push({ file, args }), "");
 	return { calls, run };
 }
 
@@ -40,8 +40,8 @@ describe("macOS notifier", () => {
 });
 
 describe.skipIf(process.platform !== "darwin")("running a helper program", () => {
-	it("resolves when it exits 0", async () => {
-		await expect(runFile("/usr/bin/true", [], 5_000)).resolves.toBeUndefined();
+	it("resolves with its output when it exits 0", async () => {
+		await expect(runFile("/bin/echo", ["hello"], 5_000)).resolves.toBe("hello\n");
 	});
 
 	it("rejects when it exits non-zero or cannot be started", async () => {
@@ -50,6 +50,14 @@ describe.skipIf(process.platform !== "darwin")("running a helper program", () =>
 	});
 
 	it("rejects when it runs past the timeout", async () => {
-		await expect(runFile("/bin/sleep", ["5"], 100)).rejects.toThrow(/sleep/);
+		const running = runFile("/bin/sleep", ["5"], 100);
+		await expect(running).rejects.toThrow(/sleep timed out after 100 ms/);
+		await expect(running).rejects.toBeInstanceOf(TimedOutError);
+	});
+
+	it("rejects as too much output, not as a timeout, when it writes more than it may", async () => {
+		const running = runFile("/usr/bin/yes", [], 5_000);
+		await expect(running).rejects.toThrow(/yes wrote more output than allowed/);
+		await expect(running).rejects.not.toBeInstanceOf(TimedOutError);
 	});
 });

@@ -272,7 +272,7 @@ describe("tapping the active key", () => {
 		t.press("key-a");
 
 		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "paused", minutes: 4, ring: 0.7, style: DEFAULT_STYLE });
-		expect(t.events.at(-1)).toEqual({ type: "paused", keyId: "key-a" });
+		expect(t.events.at(-1)).toEqual({ type: "paused", keyId: "key-a", sessionId: 1 });
 	});
 });
 
@@ -289,7 +289,7 @@ describe("resuming a paused key", () => {
 
 		t.press("key-a");
 		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "running", minutes: 4, ring: 0.7, style: DEFAULT_STYLE });
-		expect(t.events.at(-1)).toEqual({ type: "resumed", keyId: "key-a" });
+		expect(t.events.at(-1)).toEqual({ type: "resumed", keyId: "key-a", sessionId: 1 });
 
 		t.elapse(30_000 - 1);
 		expect(t.display.get("key-a")).toMatchObject({ minutes: 4 });
@@ -319,7 +319,7 @@ describe("holding a key", () => {
 		holdUntilWake(t, "key-a");
 
 		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 15, style: DEFAULT_STYLE });
-		expect(t.events.at(-1)).toEqual({ type: "cancelled", keyId: "key-a" });
+		expect(t.events.at(-1)).toEqual({ type: "cancelled", keyId: "key-a", sessionId: 1 });
 
 		const release = t.apply(t.coordinator.keyUp("key-a"));
 		expect(release).toEqual({ renders: [], events: [] });
@@ -415,7 +415,7 @@ describe("selecting another preset", () => {
 
 		expect(t.display.get("key-a")).toEqual({ keyId: "key-a", state: "idle", minutes: 5, style: DEFAULT_STYLE });
 		expect(t.display.get("key-b")).toMatchObject({ state: "running", minutes: 25 });
-		expect(t.events.at(-1)).toEqual({ type: "replaced", keyId: "key-b", durationMs: 30 * MIN, fromKeyId: "key-a", fromState: state });
+		expect(t.events.at(-1)).toEqual({ type: "replaced", keyId: "key-b", sessionId: 2, durationMs: 30 * MIN, fromKeyId: "key-a", fromState: state });
 		expect(t.events.map((e) => e.type)).not.toContain("completed");
 		expect(t.events.map((e) => e.type)).not.toContain("cancelled");
 	});
@@ -444,7 +444,7 @@ describe("session events", () => {
 		t.elapse(0);
 
 		expect(t.events).toEqual([
-			{ type: "started", keyId: "key-a", durationMs: 5 * MIN },
+			{ type: "started", keyId: "key-a", sessionId: 1, durationMs: 5 * MIN },
 			{ type: "completed", keyId: "key-a", sessionId: 1, durationMs: 5 * MIN },
 		]);
 	});
@@ -460,6 +460,29 @@ describe("session events", () => {
 		const ids = t.events.flatMap((e) => (e.type === "completed" ? [e.sessionId] : []));
 		expect(ids).toHaveLength(2);
 		expect(ids[1]).toBeGreaterThan(ids[0]);
+	});
+
+	it("tags every transition with its session, and a replacement starts a new session", () => {
+		const t = setup();
+		t.appear("key-a");
+		t.appear("key-b");
+		t.press("key-a");
+		t.press("key-a"); // pause
+		t.press("key-a"); // resume
+		t.press("key-b"); // replaces key-a's session
+		t.apply(t.coordinator.keyDown("key-b"));
+		t.elapse(HOLD_MS); // held: cancels key-b's session
+		t.apply(t.coordinator.keyUp("key-b"));
+
+		const [a, , , b] = t.events.map((e) => e.sessionId);
+		expect(t.events.map((e) => [e.type, e.sessionId])).toEqual([
+			["started", a],
+			["paused", a],
+			["resumed", a],
+			["replaced", b],
+			["cancelled", b],
+		]);
+		expect(b).toBeGreaterThan(a);
 	});
 
 	it("reports no completion for a session that was cancelled or replaced, even after its end time", () => {
@@ -685,7 +708,7 @@ describe("key appearance", () => {
 		}
 		if (state === "paused") {
 			t.press("key-a");
-			expect(t.events.at(-1)).toEqual({ type: "resumed", keyId: "key-a" });
+			expect(t.events.at(-1)).toEqual({ type: "resumed", keyId: "key-a", sessionId: 1 });
 		}
 	});
 

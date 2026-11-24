@@ -10,12 +10,14 @@ export type PresetControllerPorts = {
 	paint(render: KeyRender): void;
 	/** Acts on session transitions (completion alerts). A failure is logged and never reaches the timer. */
 	alerts: { handle(events: readonly SessionEvent[]): Promise<void> };
+	/** Runs the Focus shortcuts for session transitions, in order. Never awaited: Focus never holds up the timer. */
+	focus: { handle(events: readonly SessionEvent[]): Promise<void> };
 	log: Log;
 };
 
 /**
  * The plugin's runtime wiring, free of the Stream Deck SDK so it can be tested: key events go to the
- * coordinator, its renders are painted, its session events go to the alert dispatcher, and one wake timer
+ * coordinator, its renders are painted, its session events go to the alert and Focus dispatchers, and one wake timer
  * fires when the coordinator says something next changes. The wake stays scheduled even with no visible
  * keys, so a completion is processed (and alerted) on time.
  */
@@ -62,6 +64,7 @@ export class PresetController {
 		for (const event of out.events) this.ports.log.info(`session ${JSON.stringify(event)}`);
 		if (out.events.length > 0) {
 			this.ports.alerts.handle(out.events).catch((err: unknown) => this.ports.log.error("Alert failed", err));
+			this.ports.focus.handle(out.events).catch((err: unknown) => this.ports.log.error("Focus switching failed", err));
 		}
 		this.#wake.schedule(this.#coordinator.nextChangeAt());
 	}

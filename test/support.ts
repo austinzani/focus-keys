@@ -34,11 +34,22 @@ export function runPiScript() {
 		return [async () => undefined, (value: unknown) => void into.push({ key, value })];
 	};
 	const window = new EventTarget();
-	const SDPIComponents = { useSettings: fakeUse(saved.settings), useGlobalSettings: fakeUse(saved.global) };
+	const pluginMessages: ((ev: { payload: unknown }) => void)[] = [];
+	/** Messages the inspector sent through the Stream Deck client, e.g. `{ event: "sendToPlugin", payload }`. */
+	const sent: { event: string; payload: unknown }[] = [];
+	const SDPIComponents = {
+		useSettings: fakeUse(saved.settings),
+		useGlobalSettings: fakeUse(saved.global),
+		streamDeckClient: {
+			sendToPropertyInspector: { subscribe: (fn: (ev: { payload: unknown }) => void) => void pluginMessages.push(fn) },
+			send: async (event: string, payload: unknown) => void sent.push({ event, payload }),
+		},
+	};
 	new Function("document", "window", "SDPIComponents", source)({ getElementById: field }, window, SDPIComponents);
 	return {
 		saved,
 		delays,
+		sent,
 		/** Types `text` one key at a time; a newline is typed with the Enter key. */
 		type(id: string, text: string) {
 			const f = field(id);
@@ -52,6 +63,9 @@ export function runPiScript() {
 		enter: (id: string) => field(id).dispatchEvent(Object.assign(new Event("keydown"), { key: "Enter" })),
 		blur: (id: string) => field(id).dispatchEvent(new Event("focusout")),
 		close: () => window.dispatchEvent(new Event("pagehide")),
+		/** Delivers a message the plugin sent to the inspector. */
+		fromPlugin: (payload: unknown) => pluginMessages.forEach((fn) => fn({ payload })),
+		field: (id: string) => field(id) as EventTarget & { value?: string; textContent?: string; hidden?: boolean },
 	};
 }
 
