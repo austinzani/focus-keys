@@ -20,7 +20,7 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 
 - [ ] 1. Remove the dev link: `npx streamdeck unlink com.austinzani.focus-keys`. In Stream Deck › Preferences › Plugins, Focus Keys is gone, and `~/Library/Application Support/com.elgato.StreamDeck/Plugins/` has no `com.austinzani.focus-keys.sdPlugin`.
 - [ ] 2. Optional, closer to a user's Mac: `npx streamdeck dev --disable`, and move `~/Library/Application Support/com.austinzani.focus-keys/` aside for a fresh state.
-- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Focus Keys** category appears with **Timer Preset** and **Break** (cup icon), each with its icon in the action list and in Preferences › Plugins showing version 0.1.6.0.
+- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Focus Keys** category appears with **Timer Preset** and **Break** (cup icon), each with its icon in the action list and in Preferences › Plugins showing version 0.1.7.0.
 - [ ] 4. The installed folder's `logs/` contains a log with `Focus Keys plugin connected` and no errors.
 
 ## 2. Four-key timer
@@ -29,7 +29,7 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 - [ ] 2. Set **Minutes** to **5**, **15**, **30** and **60** (Enter or click away after each). Each key's number updates.
 - [ ] 3. Type an unusable value (empty, `0`, `200`) and click away. The key keeps its previous number. Close and reopen the Property Inspector: the field shows the key's number.
 - [ ] 4. Press **5**. A ring appears and the number stays **5**. Over a minute the ring shrinks and the number becomes **4** when four minutes remain. No seconds ever.
-- [ ] 5. Tap the running key: ring turns muted and stops; the number keeps its color. Wait a minute, tap again: ring regains its color and the countdown continues from where it paused.
+- [ ] 5. Tap the running key: progress stops, the key dims and a pause symbol appears. Wait a minute, tap again: the selected colors return and the countdown continues from where it paused.
 - [ ] 6. Hold the running key: at about half a second it returns to **5** while your finger is still down; releasing does nothing more. Repeat with a paused key.
 - [ ] 7. Start **15**, then press **30**. The 15 key shows **15** again and 30 counts. No alert.
 - [ ] 8. Switch to another page and back while a timer runs. The key shows the current countdown.
@@ -43,14 +43,14 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 Compare with the contact sheets from `npm run preview` if useful.
 
 - [ ] 1. With default color, for each font (Inter, Nunito, Oswald, JetBrains Mono, Bitter) on all keys, plus a key set to **180** if one is free: idle numbers are large, sharp, centered and never clipped; running number and ring are clear and the ring doesn't touch the digits; paused is readable and clearly different from running at a glance; a finished **0** is readable.
-- [ ] 2. Colors: blue, green, yellow, white, mid grey `#808080`, navy. Each key shows its chosen color without changing it. Paused stays distinguishable from running, and the muted paused ring is visible against the track for contrasting colors.
+- [ ] 2. Colors: blue, green, yellow, white, mid grey `#808080`, navy. Each key shows its chosen color while idle and running. Paused dims the entire key and shows a visible pause symbol; resuming restores the chosen colors.
 - [ ] 3. Mid-timer, change the running key's color, then its font. It redraws at once and the minutes and ring carry on. Changing another key's look doesn't affect the running key.
 - [ ] 4. Reopen Stream Deck. Every key keeps its color and font.
 - [ ] 5. Note any font or color that's hard to read on the Neo.
-- [ ] 6. Set a colored ring background and different contrasting number and ring colors: idle, running, paused and finished keys use the background and selected number color, and the ring uses its selected color.
-- [ ] 7. Try left-to-right and top-to-bottom sweeps with white and black numbers. The changed area grows in the selected direction; the number keeps its chosen color. Pause freezes the sweep, completion fills the background, and the selected style and colors survive a restart. Change styles mid-timer and verify the countdown continues.
+- [ ] 6. Set a colored ring background and different contrasting number and ring colors: idle, running and finished keys use the selected colors; pause dims them and shows a pause symbol. The running ring has no play symbol.
+- [ ] 7. Try left-to-right and top-to-bottom sweeps with white and black numbers. A play symbol appears immediately on start; the changed area grows in the selected direction and the number keeps its chosen color while running. Pause freezes and dims the sweep and shows a pause symbol; resume restores the colors and play symbol. Completion fills the background, and the selected style and colors survive a restart. Change styles mid-timer and verify the countdown continues.
 - [ ] 8. Set a white ring number on an orange background: the number remains white. Switch to either sweep: the background remains the same orange, and the sweep number picker is available.
-- [ ] 9. Changing style immediately shows its relevant controls. For a sweep, choose custom colors independently for the number and the sweep; the number stays its chosen color throughout. Confirm old black-and-white selections are retained after updating.
+- [ ] 9. Changing style immediately shows its relevant controls. For a sweep, choose custom colors independently for the number and the sweep; the number stays its chosen color except for the paused dim. Confirm old black-and-white selections are retained after updating.
 
 ## 4. Alerts
 

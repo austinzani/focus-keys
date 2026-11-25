@@ -14,7 +14,7 @@ function colorAt(data: Buffer, x: number, y: number): string {
 }
 
 describe("visual styles rendered as pixels", () => {
-	it.each(["sweep-horizontal", "sweep-vertical"])("keeps the chosen sweep number color in every timer state for %s", (visualStyle) => {
+	it.each(["sweep-horizontal", "sweep-vertical"])("preserves the chosen sweep number color and dims it only when paused for %s", (visualStyle) => {
 		const style = parseKeyStyle({ visualStyle, backgroundColor: "#ff8800", sweepNumber: "#ffff44", sweepEnd: "#ffffff" });
 		const states: KeyRender[] = [
 			{ keyId: "a", state: "idle", minutes: 5, style },
@@ -25,7 +25,7 @@ describe("visual styles rendered as pixels", () => {
 		for (const state of states) {
 			const svg = renderKeySvg(state);
 			const numberGroups = [...svg.matchAll(/<g data-role="number"[^>]*fill="([^"]+)"/g)];
-			expect(numberGroups.map((group) => group[1])).toEqual(["#ffff44"]);
+			expect(numberGroups.map((group) => group[1])).toEqual([state.state === "paused" ? "#a6a62c" : "#ffff44"]);
 			expect(svg).not.toContain("clip-path");
 		}
 	});
@@ -120,7 +120,32 @@ describe("visual styles rendered as pixels", () => {
 		const paused = pixels({ keyId: "a", state: "paused", minutes: 3, ring: 0.5, style });
 		const done = pixels({ keyId: "a", state: "done", minutes: 0, style });
 		expect(colorAt(idle, 10, 10)).toBe("#a04030");
-		expect(paused).toEqual(running);
+		expect(colorAt(running, 10, 10)).toBe("#ffffff");
+		expect(colorAt(paused, 10, 10)).toBe("#a6a6a6");
+		expect(colorAt(paused, 110, 110)).toBe("#682a1f");
 		expect(colorAt(done, 130, 10)).toBe("#ffffff");
+	});
+
+	it.each(["sweep-horizontal", "sweep-vertical"])("shows a play icon immediately for %s and a pause icon until resumed", (visualStyle) => {
+		const style = parseKeyStyle({ visualStyle, backgroundColor: "#ff8800", sweepNumber: "#ffffff", sweepEnd: "#000000" });
+		const idle: KeyRender = { keyId: "a", state: "idle", minutes: 5, style };
+		const running: KeyRender = { keyId: "a", state: "running", minutes: 5, ring: 1, style };
+		const paused: KeyRender = { ...running, state: "paused" };
+		const done: KeyRender = { keyId: "a", state: "done", minutes: 0, style };
+		expect(colorAt(pixels(idle), 127, 16)).toBe("#ff8800");
+		expect(colorAt(pixels(running), 127, 16)).toBe("#000000");
+		expect(colorAt(pixels(paused), 126, 16)).toBe("#ffffff");
+		expect(colorAt(pixels(paused), 134, 16)).toBe("#ffffff");
+		expect(colorAt(pixels(paused), 4, 4)).toBe("#a65800");
+		expect(colorAt(pixels(running), 4, 4)).toBe("#ff8800");
+		expect(renderKeySvg(done)).not.toContain('data-role="status-');
+	});
+
+	it("uses a visible status icon on light and dark backgrounds as the sweep passes it", () => {
+		const style = parseKeyStyle({ visualStyle: "sweep-vertical", backgroundColor: "#ffffff", sweepEnd: "#000000" });
+		const initial = pixels({ keyId: "a", state: "running", minutes: 5, ring: 1, style });
+		const later = pixels({ keyId: "a", state: "running", minutes: 3, ring: 0.5, style });
+		expect(colorAt(initial, 127, 16)).toBe("#000000");
+		expect(colorAt(later, 127, 16)).toBe("#ffffff");
 	});
 });

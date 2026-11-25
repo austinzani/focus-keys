@@ -29,8 +29,8 @@ Updating works the same way: double-click the newer file. Keys and their setting
 | Action | Result |
 | --- | --- |
 | Tap an idle or finished key | Starts a timer for that key's minutes. |
-| Tap the running key | Pauses. The number and progress freeze; a ring turns a muted shade. |
-| Tap the paused key | Resumes from where it paused. |
+| Tap the running key | Pauses. The number and progress freeze, the key dims, and a pause symbol appears in the corner. |
+| Tap the paused key | Resumes from where it paused and restores the key's colors. |
 | Tap another key while a timer is running or paused | Replaces it. The old key goes back to its idle number. No alert plays for the replaced timer. |
 | Hold the running or paused key for about half a second (600 ms) | Cancels while your finger is still down. The key goes back to its idle number. No alert. |
 | Hold a finished key (showing **0**) | Clears it back to its idle number. |
@@ -51,8 +51,10 @@ The number counts whole minutes and changes when that many full minutes remain: 
 
 Each key has its own **Style**, colors and **Font**. Changes redraw only that key and never affect a running timer.
 
-- **Ring** (default): choose a background, number color and ring color independently; the ring shrinks as time passes. The number keeps its color when running. A paused ring is muted. Existing keys keep their chosen number and ring color and background.
-- **Sweep left to right** or **Sweep top to bottom**: choose the starting background, number and sweep colors independently. The number keeps its chosen color throughout. At completion the background is fully swept. A paused sweep stays frozen.
+- **Ring** (default): choose a background, number color and ring color independently; the ring shrinks as time passes. The number keeps its color when running. Existing keys keep their chosen number and ring color and background.
+- **Sweep left to right** or **Sweep top to bottom**: choose the starting background, number and sweep colors independently. The number keeps its chosen color while the timer runs. A small play symbol appears as soon as the timer starts. At completion the background is fully swept.
+
+In all styles, pausing freezes progress, dims the key and displays a pause symbol. Resuming restores the chosen colors. The small status symbol changes between black and white to remain visible against its background; it does not change your chosen number or ring colors.
 - The background color is shared by all three styles for that key. Colors are shown as chosen, so pick a number and background with enough contrast to read comfortably.
 - Fonts: **Inter** (default), **Nunito**, **Oswald**, **JetBrains Mono**, **Bitter**. The digits are built into the plugin, so they look the same whatever fonts your Mac has.
 - The action has no title field. If a key shows a picture instead of the number, it has a custom image set in the Stream Deck app; clear it.

@@ -70,17 +70,17 @@ describe("key image", () => {
 		expect(halfOn).toBeCloseTo(circumference! / 2);
 	});
 
-	it("draws a paused key with the same frozen arc in a muted shade and the chosen number color", () => {
+	it("draws a paused key with a frozen, dimmed arc and number plus a pause indicator", () => {
 		const run = renderKeySvg(running(4, 0.7));
 		const pause = renderKeySvg(paused(4, 0.7));
 		const dashOn = (svg: string) => progressArc(svg)?.match(/stroke-dasharray="([\d.]+)/)?.[1];
 
 		expect(numberText(pause)).toBe("4");
 		expect(dashOn(pause)).toBe(dashOn(run));
-		// #1e90ff mixed 60% toward grey #5a5a5a: still blue-ish, clearly darker than running.
-		expect(arcStroke(pause)).toBe("#42709c");
-		expect(numberFill(pause)).toBe("#1e90ff");
-		expect(numberFill(pause)).toBe(numberFill(run));
+		expect(arcStroke(pause)).toBe("#145ea6");
+		expect(numberFill(pause)).toBe("#145ea6");
+		expect(pause).toContain('data-role="status-paused"');
+		expect(run).not.toContain('data-role="status-running"');
 	});
 
 	it("draws a finished key as a 0 in the selected color with no arc", () => {

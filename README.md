@@ -5,7 +5,7 @@ Focus Keys is a Mac-only Stream Deck plugin for whole-minute countdowns. Put a t
 ## Features
 
 - **Your presets:** Add a Timer Preset action for each duration you want, from 1 to 180 minutes. For example, set four keys to 5, 15, 30 and 60 minutes. All keys share one active timer.
-- **Three visual styles:** Choose a shrinking ring, a left-to-right sweep or a top-to-bottom sweep. Each key has its own colors and one of five number fonts. In sweep styles the number keeps its chosen color as the background changes.
+- **Three visual styles:** Choose a shrinking ring, a left-to-right sweep or a top-to-bottom sweep. Each key has its own colors and one of five number fonts. Sweeps show a small play symbol while running; paused keys dim and show a pause symbol.
 - **Simple controls:** Tap to start, pause or resume. Hold for about half a second to cancel. Pressing another preset replaces the current timer.
 - **Breaks:** The separate Break action shares the timer but never turns Focus on.
 - **Alerts:** Choose a macOS sound, silence it, or select a longer alert that repeats the sound five times. Optionally show a macOS notification with custom text. Alert settings are shared across keys.

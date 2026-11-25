@@ -13,24 +13,26 @@ const NUMBER_RADIUS = RING_RADIUS - RING_WIDTH / 2 - 4;
 /** Digits are never taller than this, in px; wider numbers are sized down to fit inside NUMBER_RADIUS. */
 const MAX_DIGIT_HEIGHT = 62;
 
-/** A paused ring is the key color mixed this far toward PAUSED_GREY. */
-const PAUSED_MUTE = 0.6;
-const PAUSED_GREY = "#5a5a5a";
+/** Dim the whole key by the same amount while paused. */
+const PAUSED_DIM = 0.35;
 const RING_TRACK = "#2b2b2b";
 /** Last resort only, when no digit outlines are available. */
 const FALLBACK_FONT_FAMILY = "-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 /**
  * Draws one key with a whole-minute number, either a shrinking ring or a growing background sweep.
- * A paused ring is muted; a paused sweep stays frozen. Never shows seconds.
+ * Sweeps show a play indicator while running; paused keys dim and show a pause indicator. Never shows seconds.
  * Digits are drawn from bundled font outlines, so the look never depends on fonts installed on the Mac.
  */
 export function renderKeySvg(render: KeyRender, fonts: Readonly<Record<string, GlyphFont>> = GLYPH_FONTS): string {
 	const { color, ringColor: chosenRingColor, visualStyle, backgroundColor, sweepBackground, sweepNumber, sweepEnd } = render.style;
 	const isRing = visualStyle === "ring";
-	const numberColor = isRing ? color : sweepNumber;
-	const ringColor = render.state === "paused" ? toHex(mix(toRgb(chosenRingColor), toRgb(PAUSED_GREY), PAUSED_MUTE)) : chosenRingColor;
-	const trackColor = backgroundColor === KEY_BACKGROUND ? RING_TRACK : toHex(mix(toRgb(backgroundColor), toRgb(chosenRingColor), 0.2));
+	const dim = (value: string) => render.state === "paused" ? toHex(mix(toRgb(value), [0, 0, 0], PAUSED_DIM)) : value;
+	const numberColor = dim(isRing ? color : sweepNumber);
+	const ringColor = dim(chosenRingColor);
+	const trackColor = dim(backgroundColor === KEY_BACKGROUND ? RING_TRACK : toHex(mix(toRgb(backgroundColor), toRgb(chosenRingColor), 0.2)));
+	const baseColor = dim(isRing ? backgroundColor : sweepBackground);
+	const sweptColor = dim(sweepEnd);
 
 	const ring =
 		isRing && (render.state === "running" || render.state === "paused")
@@ -44,20 +46,41 @@ export function renderKeySvg(render: KeyRender, fonts: Readonly<Record<string, G
 	const font = [fonts[render.style.font], fonts[DEFAULT_FONT]].find((f) => f !== undefined && hasDigits(f, text));
 	const number = font !== undefined ? outlinedNumber(text, font, numberColor) : textNumber(text, numberColor);
 	let sweep = "";
+	let width = 0;
+	let height = 0;
 	if (!isRing) {
 		const elapsed = render.state === "done" ? 1 : render.state === "idle" ? 0 : Math.max(0, Math.min(1, 1 - render.ring));
-		const width = visualStyle === "sweep-horizontal" ? SIZE * elapsed : SIZE;
-		const height = visualStyle === "sweep-vertical" ? SIZE * elapsed : SIZE;
-		sweep = `<rect data-role="sweep" width="${fmt(width)}" height="${fmt(height)}" fill="${sweepEnd}"/>` + number;
+		width = visualStyle === "sweep-horizontal" ? SIZE * elapsed : SIZE;
+		height = visualStyle === "sweep-vertical" ? SIZE * elapsed : SIZE;
+		sweep = `<rect data-role="sweep" width="${fmt(width)}" height="${fmt(height)}" fill="${sweptColor}"/>` + number;
 	}
+	// The small state icon picks its own contrast; the user's number and ring colors are never adjusted for contrast.
+	const iconBackground = !isRing && width > 131 && height > 16 ? sweptColor : baseColor;
+	const iconColor = statusColor(iconBackground);
+	const status = render.state === "paused"
+		? `<g data-role="status-paused" fill="${iconColor}"><rect x="125" y="10" width="4" height="13"/><rect x="133" y="10" width="4" height="13"/></g>`
+		: render.state === "running" && !isRing
+			? `<path data-role="status-running" d="M126 10 L126 23 L137 16.5 Z" fill="${iconColor}"/>`
+			: "";
 
 	return (
 		`<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}">` +
-		`<rect width="${SIZE}" height="${SIZE}" fill="${isRing ? backgroundColor : sweepBackground}"/>` +
+		`<rect width="${SIZE}" height="${SIZE}" fill="${baseColor}"/>` +
 		ring +
 		(isRing ? number : sweep) +
+		status +
 		`</svg>`
 	);
+}
+
+/** Choose black or white for the status glyph based on the background underneath it. */
+function statusColor(background: string): string {
+	const [r, g, b] = toRgb(background).map((channel) => {
+		const value = channel / 255;
+		return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+	});
+	const luminance = 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+	return luminance > 0.179 ? "#000000" : "#ffffff";
 }
 
 /** Stream Deck's documented form for SVG images passed to setImage. */
