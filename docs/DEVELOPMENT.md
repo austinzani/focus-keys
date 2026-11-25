@@ -67,7 +67,7 @@ npm run package      # build, validate and pack (see Packaging)
 - `src/alerts/dispatcher.ts`: turns each `completed` event into a sound and/or notification, once per session. `src/alerts/macos.ts` runs `afplay` and the notifiers:
   - `HelperNotifier` launches the bundled helper app `notifier/Focus Keys.app` (source `native/notifier/`, Swift, `UNUserNotificationCenter`) with `open -n -g … --args --title --body --result <tmp file>` and polls the result file for up to 10 s: `ok`, `denied` (user turned Focus Keys notifications off) or `error: …`. Launching through Launch Services, not by exec'ing the binary, is deliberate: during development a directly exec'd helper always got `Notifications are not allowed for this application`.
   - `FallbackNotifier` falls back to `OsascriptNotifier` (AppleScript `display notification`, attributed to Script Editor: the notification log shows `Connection com.apple.ScriptEditor2 with path: /usr/bin/osascript`) on any helper failure, but not on `denied` or while the helper is still waiting for the permission prompt.
-  - Not yet verified on a Mac with a Developer ID–signed, notarized helper: during development (ad-hoc and Apple Development signing) macOS refused authorization, so only the fallback path has been seen working.
+  - On the owner's Mac, a Developer ID–signed, notarized helper delivered a timer notification as Focus Keys after macOS notification permission was enabled. During development, ad-hoc and Apple Development builds were refused authorization; the Script Editor fallback was attempted, but its banner was not confirmed.
 - `src/core/focus.ts`: validates Focus settings and maps session events to Focus start/end. `src/focus/dispatcher.ts` runs shortcuts in order, at most one start and one end per focus session. `src/focus/shortcuts.ts` runs and lists shortcuts with `/usr/bin/shortcuts`. `src/focus/picker.ts` fills the Property Inspector's pickers. `src/focus/status.ts` keeps the last-problem line.
 - `src/persistence/store.ts`: the state file (below).
 - `src/actions/timer-actions.ts`: the Stream Deck adapter. Two actions, Timer Preset (`focus` kind) and Break (`break` kind), forward SDK events to one shared `TimerKeys`, which owns the controller, paints keys with `setImage` and reads global settings. A break session is marked `kind: "break"` in the coordinator, its events and the state file; `focusIntent` treats every break event as an end, so a break never turns Focus on.
@@ -120,8 +120,9 @@ Five OFL 1.1 fonts from Fontsource 5.3.0 (Inter Bold, Nunito ExtraBold, Oswald S
    - refuses if the manifest has `Nodejs.Debug`, the versions disagree, or the notification helper isn't built, and warns if the helper isn't notarized;
    - builds with rollup (terser, no sourcemaps);
    - runs `streamdeck pack … --output release --force --no-update-check`, which validates first and won't pack an invalid plugin;
+   - replaces the helper executable's archive entry with one retaining its executable permissions, which the Stream Deck CLI otherwise strips;
    - restores `manifest.json` afterwards, because `pack` rewrites it in its own formatting.
-3. Output: `release/com.austinzani.focus-keys.streamDeckPlugin` (about 240 KiB with the helper; `release/` is git-ignored).
+3. Output: `release/com.austinzani.focus-keys.streamDeckPlugin` (about 250 KiB with the helper; `release/` is git-ignored).
 
 What goes in: everything in the `.sdPlugin` folder except what `com.austinzani.focus-keys.sdPlugin/.sdignore` excludes (`logs/`, `.DS_Store`, `*.map`) and the CLI defaults (`.git`, `/.env*`, `*.log`, `*.js.map`). Rollup emits `bin/THIRD_PARTY_LICENSES.txt` with the notices of the npm packages bundled into `plugin.js` (@elgato/streamdeck, @elgato/utils, @elgato/schemas, @streamdeck/core, ws, zod: MIT; tslib: 0BSD), since terser strips license comments. Font and sdpi-components licenses ship in `licenses/fonts/` and `ui/vendor/LICENSES.md`.
 

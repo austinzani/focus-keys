@@ -144,9 +144,9 @@ Product calls from this pass:
 
 | Group | Pass / fail | Notes (blockers first) |
 | --- | --- | --- |
-| 1. Install | Partial pass | Packaged plugin installed and connected; both actions appear. Remaining clean-setup checks are unverified. |
+| 1. Install | Partial pass | Packaged plugin installed and connected; both actions appear. The owner installed the 0.1.6 update. Remaining clean-setup checks are unverified. |
 | 2. Four-key timer | Partial pass | On a virtual test profile, start, pause, resume and cancel were logged; a one-minute timer completed on time. Four-key and Break checks remain. |
-| 3. Appearance | Partial | One idle preset displayed its large number on the virtual device. Font, color and physical Neo checks remain. |
+| 3. Appearance | Partial | The owner reported the corrected appearance looks good. The full font and color matrix and physical Neo readability checks remain. |
 | 4. Alerts | Partial pass | One-minute completion logged one Glass alert and the owner heard a sound. Fixed missing executable permission in the package; after reinstalling and enabling macOS permission, the owner confirmed a Focus Keys notification from a timer. Remaining sound, notification-setting and cancellation cases are unverified. |
 | 5a. Focus prototype | Skipped | Owner requested that Focus testing wait. |
 | 5b. Plugin Focus | Skipped | Owner requested that Focus testing wait. |

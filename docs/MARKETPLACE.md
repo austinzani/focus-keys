@@ -25,13 +25,13 @@ Status: **done**, **owner** (needs an owner decision or action), **asset** (need
 | UUID: reverse DNS, lowercase a–z, 0–9, `-`, `.`; includes author and plugin name; action UUIDs prefixed with it | done | `com.austinzani.focus-keys`, actions `com.austinzani.focus-keys.preset` and `.break`. **Must be final before the first publish.** Elgato's guidelines say not to change UUIDs after publishing; a new UUID is a different plugin, and keys users placed stop working. See "Renaming before first publish" in [DEVELOPMENT.md](DEVELOPMENT.md). |
 | DRM readiness: `@elgato/streamdeck` v2+, `SDKVersion` 3, `Software.MinimumVersion` ≥ 6.9, CLI ≥ 1.6, manifest never read at runtime, shipped files never modified | done | SDK 3.0.6, SDKVersion 3, minimum Stream Deck 7.1, CLI 1.10.5. The plugin doesn't read `manifest.json`. It writes only to its state folder (`~/Library/Application Support/com.austinzani.focus-keys/`: `state.json`, its temporary files and any moved-aside backup) and its logs, never its shipped files. Elgato now requires DRM compatibility for new submissions and updates (seen only in a Maker Console search snippet; UNVERIFIED). |
 | No debug settings in the release manifest | done | `Nodejs.Debug` removed; `npm run package` refuses to pack if it's back. Whether Elgato blocks it is undocumented. |
-| No dev files in the package | done | `.sdignore` excludes `logs/`, `.DS_Store`, `*.map`; CLI defaults exclude `.git`, `/.env*`, `*.log`, `*.js.map`. Package has 21 files, about 121 KiB. |
+| No dev files in the package | done | `.sdignore` excludes `logs/`, `.DS_Store`, `*.map`; CLI defaults exclude `.git`, `/.env*`, `*.log`, `*.js.map`. The package currently contains 31 files, about 250 KiB including the helper. |
 | Third-party licenses ship with the plugin | done | `licenses/fonts/` (5 × SIL OFL 1.1 + NOTICE), `ui/vendor/LICENSES.md` (sdpi-components MIT, Lit BSD-3-Clause), `bin/THIRD_PARTY_LICENSES.txt` (bundled npm code: @elgato/streamdeck, @elgato/utils, @elgato/schemas, @streamdeck/core, ws, zod: MIT; tslib: 0BSD). |
 | `OS` declares only supported platforms | done | `mac`, minimum 12. Reviewers check device and OS claims. |
 | Category and action names ≤ ~30 characters, category same as or close to plugin name, tooltips set | done | Category "Focus Keys", actions "Timer Preset" and "Break", tooltips set. |
 | Optional `SupportURL` in manifest (per action; the schema has no plugin-level URL) | done | Both actions link to GitHub Issues. Update if the repo is renamed. |
 | Guideline: offer 2 to 30 actions | done | Two actions: Timer Preset and Break (a timer that never switches Focus). |
-| Bundled native binary (notification helper `notifier/Focus Keys.app`) | owner | Must be Developer ID signed and notarized before packaging a release (`npm run notifier -- --sign … --notarize …`; see DEVELOPMENT.md). UNVERIFIED: whether Elgato's DRM leaves bundled binaries untouched (a modified binary breaks its signature). If it doesn't, banners fall back to Script Editor. Check after the first upload, or ask maker@elgato.com. Mention the helper in the review notes. |
+| Bundled native binary (notification helper `notifier/Focus Keys.app`) | partial | Developer ID signing, notarization and a Focus Keys notification from the installed package were verified on the owner's Mac. Repeat signing and notarization for a new helper build. UNVERIFIED: whether Elgato's DRM leaves bundled binaries untouched (a modified binary breaks its signature). If the helper fails, the plugin attempts a Script Editor fallback. Check after the first upload, or ask maker@elgato.com. Mention the helper in the review notes. |
 | Use `showAlert` when an action fails | partial | Shown when a Focus shortcut fails. A failed sound or notification (`afplay`/`osascript`) is only logged; the timer itself has no failure case. |
 | ≤ 10 key updates per second | done | Keys redraw only on ring steps, minute boundaries and state changes. |
 
@@ -105,7 +105,7 @@ Claims are limited to behavior in the code and the user guide; Focus restore and
 - Tap to start, pause and resume; hold to cancel; tap another key to switch
 - Break key that shares the timer but never turns Focus on
 - Per-key duration (1–180 min), style, colors and font
-- Completion sound and optional macOS notification with custom text
+- Short or long completion sound and optional macOS notification with custom text
 - Optional Focus switching through your own Shortcuts
 - Survives sleep, restarts and reconnects; alerts once for a missed finish
 - Local only: no internet, no account

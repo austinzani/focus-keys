@@ -42,7 +42,7 @@
 	"Category": "Focus Keys",
 	"CategoryIcon": "imgs/plugin/category-icon",
 	"CodePath": "bin/plugin.js",
-	"Description": "A calm whole-minute countdown for Stream Deck Neo keys. No seconds, just minutes and a progress ring.",
+	"Description": "A calm whole-minute countdown for Stream Deck Neo keys, with a customizable ring or background sweep.",
 	"Icon": "imgs/plugin/marketplace",
 	"SDKVersion": 3,
 	"Software": {
