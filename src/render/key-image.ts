@@ -1,4 +1,4 @@
-import { DEFAULT_FONT, KEY_BACKGROUND, mix, toHex, toRgb } from "../core/key-style";
+import { contrastingNumber, DEFAULT_FONT, KEY_BACKGROUND, mix, toHex, toRgb } from "../core/key-style";
 import type { KeyRender } from "../core/coordinator";
 import { GLYPH_FONTS, type GlyphFont } from "./glyphs.generated";
 
@@ -28,7 +28,7 @@ const FALLBACK_FONT_FAMILY = "-apple-system, 'Helvetica Neue', Helvetica, Arial,
 export function renderKeySvg(render: KeyRender, fonts: Readonly<Record<string, GlyphFont>> = GLYPH_FONTS): string {
 	const { color, ringColor: chosenRingColor, visualStyle, backgroundColor, sweepBackground, sweepNumber, sweepEnd } = render.style;
 	const isRing = visualStyle === "ring";
-	const numberColor = isRing ? color : sweepNumber === "black" ? "#000000" : "#ffffff";
+	const numberColor = isRing ? color : sweepNumber;
 	const ringColor = render.state === "paused" ? toHex(mix(toRgb(chosenRingColor), toRgb(PAUSED_GREY), PAUSED_MUTE)) : chosenRingColor;
 	const trackColor = backgroundColor === KEY_BACKGROUND ? RING_TRACK : toHex(mix(toRgb(backgroundColor), toRgb(chosenRingColor), 0.2));
 
@@ -48,8 +48,8 @@ export function renderKeySvg(render: KeyRender, fonts: Readonly<Record<string, G
 		const elapsed = render.state === "done" ? 1 : render.state === "idle" ? 0 : Math.max(0, Math.min(1, 1 - render.ring));
 		const width = visualStyle === "sweep-horizontal" ? SIZE * elapsed : SIZE;
 		const height = visualStyle === "sweep-vertical" ? SIZE * elapsed : SIZE;
-		const inverted = sweepEnd === "black" ? "#ffffff" : "#000000";
-		const sweepColor = sweepEnd === "black" ? "#000000" : "#ffffff";
+		const inverted = contrastingNumber(sweepEnd);
+		const sweepColor = sweepEnd;
 		const invertedNumber = font !== undefined ? outlinedNumber(text, font, inverted) : textNumber(text, inverted);
 		sweep = `<defs><clipPath id="sweep-clip"><rect x="0" y="0" width="${fmt(width)}" height="${fmt(height)}"/></clipPath></defs>` +
 			`<rect data-role="sweep" width="${fmt(width)}" height="${fmt(height)}" fill="${sweepColor}"/>` +

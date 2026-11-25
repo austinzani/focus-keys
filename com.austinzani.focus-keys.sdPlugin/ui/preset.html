@@ -60,19 +60,13 @@
 		</div>
 		<div id="sweepColors" hidden>
 			<sdpi-item label="Number">
-				<sdpi-select setting="sweepNumber" default="white">
-					<option value="white">White</option>
-					<option value="black">Black</option>
-				</sdpi-select>
+				<sdpi-color setting="sweepNumber" default="#ffffff"></sdpi-color>
 			</sdpi-item>
 			<sdpi-item label="Sweep color">
-				<sdpi-select setting="sweepEnd" default="white">
-					<option value="white">White</option>
-					<option value="black">Black</option>
-				</sdpi-select>
+				<sdpi-color setting="sweepEnd" default="#ffffff"></sdpi-color>
 			</sdpi-item>
 		</div>
-		<p class="note">Choose contrasting colors. The background is shared by all three styles for this key.</p>
+		<p class="note">Choose contrasting colors. The background is shared by all three styles for this key. On the sweep, the number changes to black or white for readability.</p>
 
 		<!-- Values must match FONT_IDS in src/core/key-style.ts. -->
 		<sdpi-item label="Font">

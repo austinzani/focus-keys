@@ -9,8 +9,8 @@ export type KeyStyle = {
 	visualStyle: VisualStyle;
 	backgroundColor: string;
 	sweepBackground: string;
-	sweepNumber: "white" | "black";
-	sweepEnd: "white" | "black";
+	sweepNumber: string;
+	sweepEnd: string;
 };
 
 export const VISUAL_STYLES = ["ring", "sweep-horizontal", "sweep-vertical"] as const;
@@ -33,7 +33,7 @@ export function parseKeyStyle(settings: { color?: unknown; ringColor?: unknown; 
 	const legacyBackground = visualStyle === "ring" ? KEY_BACKGROUND : parseColor(settings.sweepBackground, KEY_BACKGROUND);
 	const backgroundColor = parseColor(settings.backgroundColor, legacyBackground);
 	const color = parseColor(settings.color, defaultColor);
-	const sweepNumber = settings.sweepNumber === "black" ? "black" : "white";
+	const sweepNumber = parseSweepColor(settings.sweepNumber, "#ffffff");
 	return {
 		color,
 		ringColor: parseColor(settings.ringColor, color),
@@ -42,8 +42,25 @@ export function parseKeyStyle(settings: { color?: unknown; ringColor?: unknown; 
 		backgroundColor,
 		sweepBackground: backgroundColor,
 		sweepNumber,
-		sweepEnd: settings.sweepEnd === "black" || settings.sweepEnd === "white" ? settings.sweepEnd : sweepNumber,
+		sweepEnd: parseSweepColor(settings.sweepEnd, sweepNumber),
 	};
+}
+
+/** Accept the white/black values saved by versions with dropdowns as well as color-picker hex values. */
+function parseSweepColor(value: unknown, fallback: string): string {
+	if (value === "white") return "#ffffff";
+	if (value === "black") return "#000000";
+	return parseColor(value, fallback);
+}
+
+/** Normalize old dropdown values for the color pickers when a key appears. */
+export function sweepColorSettings(settings: { sweepNumber?: unknown; sweepEnd?: unknown }): { sweepNumber?: string; sweepEnd?: string } {
+	const number = parseSweepColor(settings.sweepNumber, "#ffffff");
+	const end = parseSweepColor(settings.sweepEnd, number);
+	const fill: { sweepNumber?: string; sweepEnd?: string } = {};
+	if (settings.sweepNumber === undefined || settings.sweepNumber === "white" || settings.sweepNumber === "black") fill.sweepNumber = number;
+	if (settings.sweepEnd === undefined || settings.sweepEnd === "white" || settings.sweepEnd === "black") fill.sweepEnd = end;
+	return fill;
 }
 
 function parseFont(value: unknown): FontId {
@@ -79,4 +96,14 @@ export function toHex(rgb: Rgb): string {
 /** Linear blend: t = 0 gives a, t = 1 gives b. */
 export function mix(a: Rgb, b: Rgb, t: number): Rgb {
 	return [0, 1, 2].map((i) => a[i]! + (b[i]! - a[i]!) * t) as Rgb;
+}
+
+/** Black or white, whichever contrasts more with the chosen sweep color. */
+export function contrastingNumber(background: string): string {
+	const [r, g, b] = toRgb(background).map((value) => {
+		const s = value / 255;
+		return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+	}) as Rgb;
+	const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+	return (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) ? "#000000" : "#ffffff";
 }

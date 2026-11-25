@@ -15,7 +15,7 @@ class ManualClock implements Clock {
 
 const MIN = 60_000;
 /** What a key with no color or font settings is drawn with. */
-const DEFAULT_STYLE = { color: "#ff6347", ringColor: "#ff6347", font: "inter", visualStyle: "ring", backgroundColor: "#111111", sweepBackground: "#111111", sweepNumber: "white", sweepEnd: "white" };
+const DEFAULT_STYLE = { color: "#ff6347", ringColor: "#ff6347", font: "inter", visualStyle: "ring", backgroundColor: "#111111", sweepBackground: "#111111", sweepNumber: "#ffffff", sweepEnd: "#ffffff" };
 
 function setup() {
 	const clock = new ManualClock();
@@ -685,7 +685,7 @@ describe("key appearance", () => {
 		const out = t.apply(t.coordinator.settingsChanged("key-a", { durationMinutes: 5, visualStyle: "sweep-vertical", sweepBackground: "#445566", sweepNumber: "black" }));
 		expect(out.events).toEqual([]);
 		expect(out.renders).toHaveLength(1);
-		expect(out.renders[0]).toMatchObject({ state: before.state, minutes: before.minutes, ring: 0.8, style: { visualStyle: "sweep-vertical", sweepBackground: "#445566", sweepNumber: "black" } });
+		expect(out.renders[0]).toMatchObject({ state: before.state, minutes: before.minutes, ring: 0.8, style: { visualStyle: "sweep-vertical", sweepBackground: "#445566", sweepNumber: "#000000" } });
 		expect(t.coordinator.nextChangeAt()).toBe(wakeAt);
 	});
 	it("draws a new key in the default color and font, and its saved ones when set", () => {

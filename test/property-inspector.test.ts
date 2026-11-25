@@ -50,8 +50,8 @@ describe("Property Inspector appearance", () => {
 		expect(source).toMatch(/<sdpi-color setting="backgroundColor"/);
 		expect(source).toMatch(/<sdpi-color setting="color"/);
 		expect(source).toMatch(/<sdpi-color setting="ringColor"/);
-		expect(source).toMatch(/<sdpi-select setting="sweepNumber"/);
-		expect(source).toMatch(/<sdpi-select setting="sweepEnd"/);
+		expect(source).toMatch(/<sdpi-color setting="sweepNumber"/);
+		expect(source).toMatch(/<sdpi-color setting="sweepEnd"/);
 		expect(source).not.toMatch(/setting="sweepBackground"/);
 	});
 

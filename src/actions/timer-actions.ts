@@ -18,7 +18,7 @@ import { AlertDispatcher } from "../alerts/dispatcher";
 import { AfplaySoundPlayer, FallbackNotifier, HelperNotifier, OsascriptNotifier } from "../alerts/macos";
 import { systemClock } from "../core/clock";
 import { defaultColorFor, parseDuration, type PresetSettings, type TimerKind } from "../core/coordinator";
-import { legacySweepBackground, parseKeyStyle } from "../core/key-style";
+import { legacySweepBackground, parseKeyStyle, sweepColorSettings } from "../core/key-style";
 import { FocusDispatcher } from "../focus/dispatcher";
 import { answerShortcutPicker } from "../focus/picker";
 import { ShortcutsCli } from "../focus/shortcuts";
@@ -167,7 +167,7 @@ export class TimerKeys {
 		if (kind === "break" && typeof settings.color !== "string") fill.color = defaultColorFor(kind);
 		const style = parseKeyStyle(settings, defaultColorFor(kind));
 		if (settings.ringColor === undefined) fill.ringColor = style.ringColor;
-		if (settings.sweepEnd === undefined) fill.sweepEnd = style.sweepEnd;
+		Object.assign(fill, sweepColorSettings(settings));
 		const migratedBackground = legacySweepBackground(settings);
 		if (migratedBackground !== undefined) fill.backgroundColor = migratedBackground;
 		if (Object.keys(fill).length === 0) return;

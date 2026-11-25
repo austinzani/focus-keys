@@ -31,6 +31,17 @@ describe("visual styles rendered as pixels", () => {
 		const data = pixels({ keyId: "a", state: "idle", minutes: 5, style });
 		expect(colorAt(data, 4, 4)).toBe("#ff8800");
 	});
+
+	it.each(["sweep-horizontal", "sweep-vertical"])("shows a white number on the selected background for %s", (visualStyle) => {
+		const style = parseKeyStyle({ visualStyle, sweepNumber: "#ffffff", backgroundColor: "#ff8800", sweepEnd: "#000000" });
+		const data = pixels({ keyId: "a", state: "idle", minutes: 5, style });
+		let whitePixels = 0;
+		for (let y = 35; y < 110; y++) for (let x = 35; x < 110; x++) {
+			if (colorAt(data, x, y) === "#ffffff") whitePixels++;
+		}
+		expect(colorAt(data, 4, 4)).toBe("#ff8800");
+		expect(whitePixels).toBeGreaterThan(10);
+	});
 	it("keeps a custom ring background and number color when idle and running", () => {
 		const style = parseKeyStyle({ color: "#ffffff", ringColor: "#ff8800", backgroundColor: "#164a72" });
 		const idle = pixels({ keyId: "a", state: "idle", minutes: 5, style });
@@ -48,6 +59,23 @@ describe("visual styles rendered as pixels", () => {
 		expect(colorAt(data, 130, 10)).toBe("#ff8800");
 		const svg = renderKeySvg({ keyId: "a", state: "running", minutes: 3, ring: 0.5, style });
 		expect(svg).toContain('data-text="3" fill="#ffffff"');
+	});
+
+	it.each(["sweep-horizontal", "sweep-vertical"])("renders custom sweep and number colors for %s", (visualStyle) => {
+		const style = parseKeyStyle({ visualStyle, backgroundColor: "#ff8800", sweepNumber: "#33ff44", sweepEnd: "#0066cc" });
+		const render: KeyRender = { keyId: "a", state: "running", minutes: 3, ring: 0.5, style };
+		const data = pixels(render);
+		const vertical = visualStyle === "sweep-vertical";
+		expect(colorAt(data, 10, 10)).toBe("#0066cc");
+		expect(colorAt(data, vertical ? 10 : 130, vertical ? 130 : 10)).toBe("#ff8800");
+		let originalPixels = 0;
+		let coveredPixels = 0;
+		for (let y = 35; y < 110; y++) for (let x = 35; x < 110; x++) {
+			if ((vertical ? y : x) >= 72 && colorAt(data, x, y) === "#33ff44") originalPixels++;
+			if ((vertical ? y : x) < 72 && colorAt(data, x, y) === "#ffffff") coveredPixels++;
+		}
+		expect(originalPixels).toBeGreaterThan(10);
+		expect(coveredPixels).toBeGreaterThan(10);
 	});
 
 	it.each([
