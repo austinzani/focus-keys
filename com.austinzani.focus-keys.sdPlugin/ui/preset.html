@@ -41,7 +41,7 @@
 
 		<!-- Appearance settings belong to this key; changing them never changes a running timer. -->
 		<sdpi-item label="Style">
-			<sdpi-select setting="visualStyle" default="ring">
+			<sdpi-select id="visualStyle" setting="visualStyle" default="ring">
 				<option value="ring">Ring</option>
 				<option value="sweep-horizontal">Sweep left to right</option>
 				<option value="sweep-vertical">Sweep top to bottom</option>
@@ -50,15 +50,28 @@
 		<sdpi-item label="Background">
 			<sdpi-color setting="backgroundColor" default="#111111"></sdpi-color>
 		</sdpi-item>
-		<sdpi-item label="Ring number">
-			<sdpi-color setting="color" default="#ff6347"></sdpi-color>
-		</sdpi-item>
-		<sdpi-item label="Sweep number">
-			<sdpi-select setting="sweepNumber" default="white">
-				<option value="white">White → black</option>
-				<option value="black">Black → white</option>
-			</sdpi-select>
-		</sdpi-item>
+		<div id="ringColors">
+			<sdpi-item label="Number">
+				<sdpi-color setting="color" default="#ff6347"></sdpi-color>
+			</sdpi-item>
+			<sdpi-item label="Ring">
+				<sdpi-color setting="ringColor" default="#ff6347"></sdpi-color>
+			</sdpi-item>
+		</div>
+		<div id="sweepColors" hidden>
+			<sdpi-item label="Number">
+				<sdpi-select setting="sweepNumber" default="white">
+					<option value="white">White</option>
+					<option value="black">Black</option>
+				</sdpi-select>
+			</sdpi-item>
+			<sdpi-item label="Sweep color">
+				<sdpi-select setting="sweepEnd" default="white">
+					<option value="white">White</option>
+					<option value="black">Black</option>
+				</sdpi-select>
+			</sdpi-item>
+		</div>
 		<p class="note">Choose contrasting colors. The background is shared by all three styles for this key.</p>
 
 		<!-- Values must match FONT_IDS in src/core/key-style.ts. -->
@@ -148,6 +161,17 @@
 		</p>
 
 		<script>
+			// Components emit valuechange locally; useSettings also handles settings restored from Stream Deck.
+			const styleChoice = document.getElementById("visualStyle");
+			const ringColors = document.getElementById("ringColors");
+			const sweepColors = document.getElementById("sweepColors");
+			const showStyleColors = (value) => {
+				const sweeping = value === "sweep-horizontal" || value === "sweep-vertical";
+				ringColors.hidden = sweeping;
+				sweepColors.hidden = !sweeping;
+			};
+			styleChoice.addEventListener("valuechange", () => showStyleColors(styleChoice.value));
+			SDPIComponents.useSettings("visualStyle", showStyleColors);
 			// Text entries have no `setting` attribute: sdpi-textfield and sdpi-textarea would save on every
 			// keystroke, so typing 60 would briefly save 6, and each keystroke in the notification text would
 			// rewrite the shared global settings. Instead an entry is saved when committed: when the field loses

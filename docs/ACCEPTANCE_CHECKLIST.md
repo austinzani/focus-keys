@@ -20,7 +20,7 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 
 - [ ] 1. Remove the dev link: `npx streamdeck unlink com.austinzani.focus-keys`. In Stream Deck › Preferences › Plugins, Focus Keys is gone, and `~/Library/Application Support/com.elgato.StreamDeck/Plugins/` has no `com.austinzani.focus-keys.sdPlugin`.
 - [ ] 2. Optional, closer to a user's Mac: `npx streamdeck dev --disable`, and move `~/Library/Application Support/com.austinzani.focus-keys/` aside for a fresh state.
-- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Focus Keys** category appears with **Timer Preset** and **Break** (cup icon), each with its icon in the action list and in Preferences › Plugins showing version 0.1.3.0.
+- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Focus Keys** category appears with **Timer Preset** and **Break** (cup icon), each with its icon in the action list and in Preferences › Plugins showing version 0.1.4.0.
 - [ ] 4. The installed folder's `logs/` contains a log with `Focus Keys plugin connected` and no errors.
 
 ## 2. Four-key timer
@@ -47,9 +47,10 @@ Compare with the contact sheets from `npm run preview` if useful.
 - [ ] 3. Mid-timer, change the running key's color, then its font. It redraws at once and the minutes and ring carry on. Changing another key's look doesn't affect the running key.
 - [ ] 4. Reopen Stream Deck. Every key keeps its color and font.
 - [ ] 5. Note any font or color that's hard to read on the Neo.
-- [ ] 6. Set a colored ring background and contrasting number color: idle, running, paused and finished keys use the background and the selected number color, and the ring matches it.
+- [ ] 6. Set a colored ring background and different contrasting number and ring colors: idle, running, paused and finished keys use the background and selected number color, and the ring uses its selected color.
 - [ ] 7. Try left-to-right and top-to-bottom sweeps with white and black numbers. The changed area grows in the selected direction; the covered part of the number inverts. Pause freezes the sweep, completion fills the background, and the selected style and colors survive a restart. Change styles mid-timer and verify the countdown continues.
 - [ ] 8. Set a white ring number on an orange background: the number remains white. Switch to either sweep: the background remains the same orange, and the sweep number picker is available.
+- [ ] 9. Changing style immediately shows its relevant controls. For a sweep, choose either white or black independently for the number and the sweep color; the covered number contrasts with the sweep.
 
 ## 4. Alerts
 

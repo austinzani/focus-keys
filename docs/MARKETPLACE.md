@@ -21,7 +21,7 @@ Status: **done**, **owner** (needs an owner decision or action), **asset** (need
 | --- | --- | --- |
 | Packed with `streamdeck pack`; validation passes | done | `npm run package` builds, validates and packs `release/com.austinzani.focus-keys.streamDeckPlugin`. |
 | Required manifest fields: Actions, Author, CodePath, Description, Icon, Name, OS, SDKVersion, Software.MinimumVersion, UUID, Version | done | All present. |
-| `Version` in `x.x.x.x` form | done | `0.1.3.0`; `package.json` is `0.1.3`, and `npm run package` checks they match. |
+| `Version` in `x.x.x.x` form | done | `0.1.4.0`; `package.json` is `0.1.4`, and `npm run package` checks they match. |
 | UUID: reverse DNS, lowercase a–z, 0–9, `-`, `.`; includes author and plugin name; action UUIDs prefixed with it | done | `com.austinzani.focus-keys`, actions `com.austinzani.focus-keys.preset` and `.break`. **Must be final before the first publish.** Elgato's guidelines say not to change UUIDs after publishing; a new UUID is a different plugin, and keys users placed stop working. See "Renaming before first publish" in [DEVELOPMENT.md](DEVELOPMENT.md). |
 | DRM readiness: `@elgato/streamdeck` v2+, `SDKVersion` 3, `Software.MinimumVersion` ≥ 6.9, CLI ≥ 1.6, manifest never read at runtime, shipped files never modified | done | SDK 3.0.6, SDKVersion 3, minimum Stream Deck 7.1, CLI 1.10.5. The plugin doesn't read `manifest.json`. It writes only to its state folder (`~/Library/Application Support/com.austinzani.focus-keys/`: `state.json`, its temporary files and any moved-aside backup) and its logs, never its shipped files. Elgato now requires DRM compatibility for new submissions and updates (seen only in a Maker Console search snippet; UNVERIFIED). |
 | No debug settings in the release manifest | done | `Nodejs.Debug` removed; `npm run package` refuses to pack if it's back. Whether Elgato blocks it is undocumented. |
@@ -122,7 +122,7 @@ Claims are limited to behavior in the code and the user guide; Focus restore and
 
 **Suggested type and tags:** Productivity; tags: timer, focus, productivity, countdown, work sessions.
 
-**Release notes 0.1.3:**
+**Release notes 0.1.4:**
 
 > First release. Whole-minute timer keys and a Break key with a progress ring or background sweep, completion sound and notification, per-key styles, colors and font, optional Focus switching through Shortcuts, and recovery across sleep and restarts.
 

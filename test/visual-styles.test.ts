@@ -32,12 +32,22 @@ describe("visual styles rendered as pixels", () => {
 		expect(colorAt(data, 4, 4)).toBe("#ff8800");
 	});
 	it("keeps a custom ring background and number color when idle and running", () => {
-		const style = parseKeyStyle({ color: "#ffffff", backgroundColor: "#164a72" });
+		const style = parseKeyStyle({ color: "#ffffff", ringColor: "#ff8800", backgroundColor: "#164a72" });
 		const idle = pixels({ keyId: "a", state: "idle", minutes: 5, style });
 		const running = pixels({ keyId: "a", state: "running", minutes: 5, ring: 1, style });
 		expect(colorAt(idle, 4, 4)).toBe("#164a72");
 		expect(colorAt(running, 4, 4)).toBe("#164a72");
 		expect(renderKeySvg({ keyId: "a", state: "running", minutes: 5, ring: 1, style })).toContain('fill="#ffffff"');
+		expect(renderKeySvg({ keyId: "a", state: "running", minutes: 5, ring: 1, style })).toContain('stroke="#ff8800"');
+	});
+
+	it("lets the sweep color differ from the starting number color", () => {
+		const style = parseKeyStyle({ visualStyle: "sweep-horizontal", backgroundColor: "#ff8800", sweepNumber: "white", sweepEnd: "black" });
+		const data = pixels({ keyId: "a", state: "running", minutes: 3, ring: 0.5, style });
+		expect(colorAt(data, 10, 10)).toBe("#000000");
+		expect(colorAt(data, 130, 10)).toBe("#ff8800");
+		const svg = renderKeySvg({ keyId: "a", state: "running", minutes: 3, ring: 0.5, style });
+		expect(svg).toContain('data-text="3" fill="#ffffff"');
 	});
 
 	it.each([

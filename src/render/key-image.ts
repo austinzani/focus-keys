@@ -26,11 +26,11 @@ const FALLBACK_FONT_FAMILY = "-apple-system, 'Helvetica Neue', Helvetica, Arial,
  * Digits are drawn from bundled font outlines, so the look never depends on fonts installed on the Mac.
  */
 export function renderKeySvg(render: KeyRender, fonts: Readonly<Record<string, GlyphFont>> = GLYPH_FONTS): string {
-	const { color, visualStyle, backgroundColor, sweepBackground, sweepNumber } = render.style;
+	const { color, ringColor: chosenRingColor, visualStyle, backgroundColor, sweepBackground, sweepNumber, sweepEnd } = render.style;
 	const isRing = visualStyle === "ring";
 	const numberColor = isRing ? color : sweepNumber === "black" ? "#000000" : "#ffffff";
-	const ringColor = render.state === "paused" ? toHex(mix(toRgb(color), toRgb(PAUSED_GREY), PAUSED_MUTE)) : color;
-	const trackColor = backgroundColor === KEY_BACKGROUND ? RING_TRACK : toHex(mix(toRgb(backgroundColor), toRgb(color), 0.2));
+	const ringColor = render.state === "paused" ? toHex(mix(toRgb(chosenRingColor), toRgb(PAUSED_GREY), PAUSED_MUTE)) : chosenRingColor;
+	const trackColor = backgroundColor === KEY_BACKGROUND ? RING_TRACK : toHex(mix(toRgb(backgroundColor), toRgb(chosenRingColor), 0.2));
 
 	const ring =
 		isRing && (render.state === "running" || render.state === "paused")
@@ -48,8 +48,8 @@ export function renderKeySvg(render: KeyRender, fonts: Readonly<Record<string, G
 		const elapsed = render.state === "done" ? 1 : render.state === "idle" ? 0 : Math.max(0, Math.min(1, 1 - render.ring));
 		const width = visualStyle === "sweep-horizontal" ? SIZE * elapsed : SIZE;
 		const height = visualStyle === "sweep-vertical" ? SIZE * elapsed : SIZE;
-		const inverted = sweepNumber === "black" ? "#ffffff" : "#000000";
-		const sweepColor = sweepNumber === "black" ? "#000000" : "#ffffff";
+		const inverted = sweepEnd === "black" ? "#ffffff" : "#000000";
+		const sweepColor = sweepEnd === "black" ? "#000000" : "#ffffff";
 		const invertedNumber = font !== undefined ? outlinedNumber(text, font, inverted) : textNumber(text, inverted);
 		sweep = `<defs><clipPath id="sweep-clip"><rect x="0" y="0" width="${fmt(width)}" height="${fmt(height)}"/></clipPath></defs>` +
 			`<rect data-role="sweep" width="${fmt(width)}" height="${fmt(height)}" fill="${sweepColor}"/>` +

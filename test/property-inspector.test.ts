@@ -40,17 +40,32 @@ describe("Property Inspector duration", () => {
 	});
 
 	it("commits without the sdpi debounce", () => {
-		expect(runPiScript().delays).toEqual([null, null]);
+		expect(runPiScript().delays).toEqual([undefined, null, null]);
 	});
 });
 
 describe("Property Inspector appearance", () => {
-	it("exposes one background picker and separate ring and sweep number controls", () => {
+	it("exposes one background and separate ring and sweep controls", () => {
 		const source = piSource();
 		expect(source).toMatch(/<sdpi-color setting="backgroundColor"/);
 		expect(source).toMatch(/<sdpi-color setting="color"/);
+		expect(source).toMatch(/<sdpi-color setting="ringColor"/);
 		expect(source).toMatch(/<sdpi-select setting="sweepNumber"/);
+		expect(source).toMatch(/<sdpi-select setting="sweepEnd"/);
 		expect(source).not.toMatch(/setting="sweepBackground"/);
+	});
+
+	it("switches controls on local style selection and restored settings", () => {
+		const pi = runPiScript();
+		pi.selectStyle("sweep-horizontal");
+		expect(pi.field("ringColors").hidden).toBe(true);
+		expect(pi.field("sweepColors").hidden).toBe(false);
+		pi.selectStyle("ring");
+		expect(pi.field("ringColors").hidden).toBe(false);
+		expect(pi.field("sweepColors").hidden).toBe(true);
+		pi.settingsChanged("visualStyle", "sweep-vertical");
+		expect(pi.field("ringColors").hidden).toBe(true);
+		expect(pi.field("sweepColors").hidden).toBe(false);
 	});
 });
 

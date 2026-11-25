@@ -4,11 +4,13 @@
  */
 export type KeyStyle = {
 	color: string;
+	ringColor: string;
 	font: FontId;
 	visualStyle: VisualStyle;
 	backgroundColor: string;
 	sweepBackground: string;
 	sweepNumber: "white" | "black";
+	sweepEnd: "white" | "black";
 };
 
 export const VISUAL_STYLES = ["ring", "sweep-horizontal", "sweep-vertical"] as const;
@@ -25,18 +27,22 @@ export const BREAK_DEFAULT_COLOR = "#3cc4a8";
 export const KEY_BACKGROUND = "#111111";
 
 /** Reads the color and font settings; anything unusable falls back to the default (`defaultColor` for the color). */
-export function parseKeyStyle(settings: { color?: unknown; font?: unknown; visualStyle?: unknown; backgroundColor?: unknown; sweepBackground?: unknown; sweepNumber?: unknown }, defaultColor: string = DEFAULT_COLOR): KeyStyle {
+export function parseKeyStyle(settings: { color?: unknown; ringColor?: unknown; font?: unknown; visualStyle?: unknown; backgroundColor?: unknown; sweepBackground?: unknown; sweepNumber?: unknown; sweepEnd?: unknown }, defaultColor: string = DEFAULT_COLOR): KeyStyle {
 	const visualStyle = VISUAL_STYLES.find((style) => style === settings.visualStyle) ?? "ring";
 	// Older sweep keys stored a separate background; preserve it until the key has a shared background.
 	const legacyBackground = visualStyle === "ring" ? KEY_BACKGROUND : parseColor(settings.sweepBackground, KEY_BACKGROUND);
 	const backgroundColor = parseColor(settings.backgroundColor, legacyBackground);
+	const color = parseColor(settings.color, defaultColor);
+	const sweepNumber = settings.sweepNumber === "black" ? "black" : "white";
 	return {
-		color: parseColor(settings.color, defaultColor),
+		color,
+		ringColor: parseColor(settings.ringColor, color),
 		font: parseFont(settings.font),
 		visualStyle,
 		backgroundColor,
 		sweepBackground: backgroundColor,
-		sweepNumber: settings.sweepNumber === "black" ? "black" : "white",
+		sweepNumber,
+		sweepEnd: settings.sweepEnd === "black" || settings.sweepEnd === "white" ? settings.sweepEnd : sweepNumber,
 	};
 }
 

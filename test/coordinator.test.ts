@@ -15,7 +15,7 @@ class ManualClock implements Clock {
 
 const MIN = 60_000;
 /** What a key with no color or font settings is drawn with. */
-const DEFAULT_STYLE = { color: "#ff6347", font: "inter", visualStyle: "ring", backgroundColor: "#111111", sweepBackground: "#111111", sweepNumber: "white" };
+const DEFAULT_STYLE = { color: "#ff6347", ringColor: "#ff6347", font: "inter", visualStyle: "ring", backgroundColor: "#111111", sweepBackground: "#111111", sweepNumber: "white", sweepEnd: "white" };
 
 function setup() {
 	const clock = new ManualClock();
@@ -710,7 +710,7 @@ describe("key appearance", () => {
 		const out = t.apply(t.coordinator.settingsChanged("key-a", { durationMinutes: 15, color: "#32cd32", font: "bitter" }));
 
 		expect(out.events).toEqual([]);
-		expect(out.renders).toEqual([{ ...before, style: { ...DEFAULT_STYLE, color: "#32cd32", font: "bitter" } }]);
+		expect(out.renders).toEqual([{ ...before, style: { ...DEFAULT_STYLE, color: "#32cd32", ringColor: "#32cd32", font: "bitter" } }]);
 		expect(t.events.length).toBe(eventCount);
 		// The timer carries on exactly as before: same remaining time, same next step.
 		if (state === "running") {
@@ -749,7 +749,7 @@ describe("key appearance", () => {
 
 		const out = t.apply(t.coordinator.settingsChanged("key-a", { color: "#ffd700" }));
 
-		expect(out).toEqual({ renders: [{ ...before, style: { ...DEFAULT_STYLE, color: "#ffd700" } }], events: [] });
+		expect(out).toEqual({ renders: [{ ...before, style: { ...DEFAULT_STYLE, color: "#ffd700", ringColor: "#ffd700" } }], events: [] });
 		expect(t.display.get("key-a")).toMatchObject({ state: "running", minutes: 14 });
 		expect(t.coordinator.nextChangeAt()).toBe(wakeAt);
 		expect(t.coordinator.presetMinutes("key-a")).toBe(15);

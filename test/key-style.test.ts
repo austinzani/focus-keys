@@ -18,6 +18,7 @@ describe("key style settings", () => {
 	it("validates per-key styles and independent backgrounds and sweep numbers", () => {
 		expect(piOptions("visualStyle")).toEqual([...VISUAL_STYLES]);
 		expect(piOptions("sweepNumber")).toEqual(["white", "black"]);
+		expect(piOptions("sweepEnd")).toEqual(["white", "black"]);
 		expect(parseKeyStyle({ visualStyle: "sweep-vertical", backgroundColor: "#eee", sweepBackground: "#1A2B3C", sweepNumber: "black" })).toMatchObject({
 			visualStyle: "sweep-vertical", backgroundColor: "#eeeeee", sweepBackground: "#eeeeee", sweepNumber: "black",
 		});
@@ -53,5 +54,12 @@ describe("key style settings", () => {
 		expect(parseKeyStyle({ color: "#ffffff", backgroundColor: "#ff8800" })).toMatchObject({ color: "#ffffff", backgroundColor: "#ff8800" });
 		expect(parseKeyStyle({ color: "#000080" }).color).toBe("#000080");
 		expect(parseKeyStyle({ color: "#000000" }).color).toBe("#000000");
+	});
+
+	it("keeps ring and number colors independent and preserves older defaults", () => {
+		expect(parseKeyStyle({ color: "#ffffff", ringColor: "#123456" })).toMatchObject({ color: "#ffffff", ringColor: "#123456" });
+		expect(parseKeyStyle({ color: "#abcdef" }).ringColor).toBe("#abcdef");
+		expect(parseKeyStyle({ sweepNumber: "black" }).sweepEnd).toBe("black");
+		expect(parseKeyStyle({ sweepNumber: "black", sweepEnd: "white" })).toMatchObject({ sweepNumber: "black", sweepEnd: "white" });
 	});
 });
