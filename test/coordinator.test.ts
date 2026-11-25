@@ -15,7 +15,7 @@ class ManualClock implements Clock {
 
 const MIN = 60_000;
 /** What a key with no color or font settings is drawn with. */
-const DEFAULT_STYLE = { color: "#ff6347", font: "inter" };
+const DEFAULT_STYLE = { color: "#ff6347", font: "inter", visualStyle: "ring", backgroundColor: "#111111", sweepBackground: "#ad422f", sweepNumber: "white" };
 
 function setup() {
 	const clock = new ManualClock();
@@ -675,6 +675,19 @@ describe("unexpected key events", () => {
 });
 
 describe("key appearance", () => {
+	it("changes style and colors during a timer without changing its progress", () => {
+		const t = setup();
+		t.appear("key-a", { durationMinutes: 5 });
+		t.press("key-a");
+		t.elapse(MIN);
+		const before = t.display.get("key-a")!;
+		const wakeAt = t.coordinator.nextChangeAt();
+		const out = t.apply(t.coordinator.settingsChanged("key-a", { durationMinutes: 5, visualStyle: "sweep-vertical", sweepBackground: "#445566", sweepNumber: "black" }));
+		expect(out.events).toEqual([]);
+		expect(out.renders).toHaveLength(1);
+		expect(out.renders[0]).toMatchObject({ state: before.state, minutes: before.minutes, ring: 0.8, style: { visualStyle: "sweep-vertical", sweepBackground: "#445566", sweepNumber: "black" } });
+		expect(t.coordinator.nextChangeAt()).toBe(wakeAt);
+	});
 	it("draws a new key in the default color and font, and its saved ones when set", () => {
 		const t = setup();
 		t.appear("key-a");
@@ -697,7 +710,7 @@ describe("key appearance", () => {
 		const out = t.apply(t.coordinator.settingsChanged("key-a", { durationMinutes: 15, color: "#32cd32", font: "bitter" }));
 
 		expect(out.events).toEqual([]);
-		expect(out.renders).toEqual([{ ...before, style: { color: "#32cd32", font: "bitter" } }]);
+		expect(out.renders).toEqual([{ ...before, style: { ...DEFAULT_STYLE, color: "#32cd32", font: "bitter" } }]);
 		expect(t.events.length).toBe(eventCount);
 		// The timer carries on exactly as before: same remaining time, same next step.
 		if (state === "running") {

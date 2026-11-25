@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { FONT_IDS, parseKeyStyle } from "../src/core/key-style";
+import { FONT_IDS, VISUAL_STYLES, parseKeyStyle } from "../src/core/key-style";
 import { GLYPH_FONTS } from "../src/render/glyphs.generated";
 import { piOptions } from "./support";
 
 describe("key style settings", () => {
 	it("offers five fonts, defaulting to Inter and the tomato ring color", () => {
 		expect(FONT_IDS).toEqual(["inter", "nunito", "oswald", "jetbrains-mono", "bitter"]);
-		expect(parseKeyStyle({})).toEqual({ color: "#ff6347", font: "inter" });
+		expect(parseKeyStyle({})).toMatchObject({ color: "#ff6347", font: "inter", visualStyle: "ring", backgroundColor: "#111111", sweepNumber: "white" });
 	});
 
 	it("has bundled digit outlines and a Property Inspector option for every font", () => {
@@ -15,9 +15,20 @@ describe("key style settings", () => {
 		expect(piOptions("font")).toEqual([...FONT_IDS]);
 	});
 
+	it("validates per-key styles and independent backgrounds and sweep numbers", () => {
+		expect(piOptions("visualStyle")).toEqual([...VISUAL_STYLES]);
+		expect(piOptions("sweepNumber")).toEqual(["white", "black"]);
+		expect(parseKeyStyle({ visualStyle: "sweep-vertical", backgroundColor: "#eee", sweepBackground: "#1A2B3C", sweepNumber: "black" })).toMatchObject({
+			visualStyle: "sweep-vertical", backgroundColor: "#eeeeee", sweepBackground: "#1a2b3c", sweepNumber: "black",
+		});
+		expect(parseKeyStyle({ visualStyle: "unknown", backgroundColor: "bad", sweepBackground: "bad", sweepNumber: "blue" })).toMatchObject({
+			visualStyle: "ring", backgroundColor: "#111111", sweepBackground: "#ad422f", sweepNumber: "white",
+		});
+	});
+
 	it("keeps a valid font and color, lowercasing and expanding short hex", () => {
-		expect(parseKeyStyle({ color: "#1E90FF", font: "oswald" })).toEqual({ color: "#1e90ff", font: "oswald" });
-		expect(parseKeyStyle({ color: "#0f0", font: "bitter" })).toEqual({ color: "#00ff00", font: "bitter" });
+		expect(parseKeyStyle({ color: "#1E90FF", font: "oswald" })).toMatchObject({ color: "#1e90ff", font: "oswald" });
+		expect(parseKeyStyle({ color: "#0f0", font: "bitter" })).toMatchObject({ color: "#00ff00", font: "bitter" });
 	});
 
 	it("falls back to the defaults for unknown fonts and malformed colors", () => {

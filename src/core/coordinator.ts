@@ -5,7 +5,7 @@ import type { Clock } from "./clock";
  * Per-key settings as stored by the Stream Deck action. The Property Inspector's text field saves strings,
  * so a duration may arrive as either a number or a numeric string. `color` and `font` only change the key's look.
  */
-export type PresetSettings = { durationMinutes?: number | string; color?: string; font?: string };
+export type PresetSettings = { durationMinutes?: number | string; color?: string; font?: string; visualStyle?: string; backgroundColor?: string; sweepBackground?: string; sweepNumber?: string };
 
 /**
  * Which action a key is: a focus timer (the Timer Preset action) or a break timer (the Break action). Both
@@ -337,7 +337,11 @@ function sameRender(a: KeyRender | undefined, b: KeyRender): boolean {
 		a.minutes === b.minutes &&
 		ringOf(a) === ringOf(b) &&
 		a.style.color === b.style.color &&
-		a.style.font === b.style.font
+		a.style.font === b.style.font &&
+		a.style.visualStyle === b.style.visualStyle &&
+		a.style.backgroundColor === b.style.backgroundColor &&
+		a.style.sweepBackground === b.style.sweepBackground &&
+		a.style.sweepNumber === b.style.sweepNumber
 	);
 }
 

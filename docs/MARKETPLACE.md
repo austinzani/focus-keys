@@ -21,7 +21,7 @@ Status: **done**, **owner** (needs an owner decision or action), **asset** (need
 | --- | --- | --- |
 | Packed with `streamdeck pack`; validation passes | done | `npm run package` builds, validates and packs `release/com.austinzani.focus-keys.streamDeckPlugin`. |
 | Required manifest fields: Actions, Author, CodePath, Description, Icon, Name, OS, SDKVersion, Software.MinimumVersion, UUID, Version | done | All present. |
-| `Version` in `x.x.x.x` form | done | `0.1.1.0`; `package.json` is `0.1.1`, and `npm run package` checks they match. |
+| `Version` in `x.x.x.x` form | done | `0.1.2.0`; `package.json` is `0.1.2`, and `npm run package` checks they match. |
 | UUID: reverse DNS, lowercase a–z, 0–9, `-`, `.`; includes author and plugin name; action UUIDs prefixed with it | done | `com.austinzani.focus-keys`, actions `com.austinzani.focus-keys.preset` and `.break`. **Must be final before the first publish.** Elgato's guidelines say not to change UUIDs after publishing; a new UUID is a different plugin, and keys users placed stop working. See "Renaming before first publish" in [DEVELOPMENT.md](DEVELOPMENT.md). |
 | DRM readiness: `@elgato/streamdeck` v2+, `SDKVersion` 3, `Software.MinimumVersion` ≥ 6.9, CLI ≥ 1.6, manifest never read at runtime, shipped files never modified | done | SDK 3.0.6, SDKVersion 3, minimum Stream Deck 7.1, CLI 1.10.5. The plugin doesn't read `manifest.json`. It writes only to its state folder (`~/Library/Application Support/com.austinzani.focus-keys/`: `state.json`, its temporary files and any moved-aside backup) and its logs, never its shipped files. Elgato now requires DRM compatibility for new submissions and updates (seen only in a Maker Console search snippet; UNVERIFIED). |
 | No debug settings in the release manifest | done | `Nodejs.Debug` removed; `npm run package` refuses to pack if it's back. Whether Elgato blocks it is undocumented. |
@@ -79,17 +79,17 @@ Claims are limited to behavior in the code and the user guide; Focus restore and
 
 **Short description (manifest `Description`, under 250 characters):**
 
-> A calm focus timer for Stream Deck keys. Each key is a preset in whole minutes with a progress ring. Tap to start, pause or resume, hold to cancel. Mac only.
+> A calm focus timer for Stream Deck keys. Each key is a preset in whole minutes with a progress ring or background sweep. Tap to start, pause or resume, hold to cancel. Mac only.
 
 **Long description (about 1,200 characters):**
 
 > Focus Keys turns Stream Deck keys into a quiet whole-minute timer for focused work on a Mac. Put one key per preset on your Stream Deck Neo and start a session with one tap.
 >
-> Each key shows its minutes in large type. While a session runs, a ring around the number shrinks as time passes; there are no seconds to watch. Tap the running key to pause or resume, hold it to cancel, or tap another key to switch presets. One session runs at a time.
+> Each key shows its minutes in large type. Choose a shrinking ring or a background that sweeps across or down as time passes; there are no seconds to watch. Tap the running key to pause or resume, hold it to cancel, or tap another key to switch presets. One session runs at a time.
 >
 > When time is up, the key shows 0 and the plugin plays one of the built-in macOS sounds. It can also show a macOS notification with your own text.
 >
-> Give each key its own color and one of five number fonts. Durations run from 1 to 180 minutes.
+> Give each key its own style, colors and one of five number fonts. Durations run from 1 to 180 minutes.
 >
 > Optional Focus switching: choose your own Shortcuts to run when work starts and ends, for example to turn a work Focus on and off. Your previous Focus isn't restored, and Focus changes you make by hand aren't detected.
 >
@@ -101,10 +101,10 @@ Claims are limited to behavior in the code and the user guide; Focus restore and
 
 **Features (bullets for the listing or gallery captions):**
 
-- Whole-minute countdown with a progress ring, no seconds
+- Whole-minute countdown with a progress ring or background sweep, no seconds
 - Tap to start, pause and resume; hold to cancel; tap another key to switch
 - Break key that shares the timer but never turns Focus on
-- Per-key duration (1–180 min), color and font
+- Per-key duration (1–180 min), style, colors and font
 - Completion sound and optional macOS notification with custom text
 - Optional Focus switching through your own Shortcuts
 - Survives sleep, restarts and reconnects; alerts once for a missed finish
@@ -122,9 +122,9 @@ Claims are limited to behavior in the code and the user guide; Focus restore and
 
 **Suggested type and tags:** Productivity; tags: timer, focus, productivity, countdown, work sessions.
 
-**Release notes 0.1.1:**
+**Release notes 0.1.2:**
 
-> First release. Whole-minute timer keys and a Break key with a progress ring, completion sound and notification, per-key color and font, optional Focus switching through Shortcuts, and recovery across sleep and restarts.
+> First release. Whole-minute timer keys and a Break key with a progress ring or background sweep, completion sound and notification, per-key styles, colors and font, optional Focus switching through Shortcuts, and recovery across sleep and restarts.
 
 ## Licensing
 

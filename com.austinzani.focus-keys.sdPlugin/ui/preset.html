@@ -39,13 +39,35 @@
 			></sdpi-textfield>
 		</sdpi-item>
 
-		<!--
-			KeyStyle only: changing these redraws the key at once and never affects a running or paused timer.
-			Very dark colors are lightened on the key so the ring and number stay visible.
-		-->
-		<sdpi-item label="Color">
-			<sdpi-color setting="color" default="#ff6347"></sdpi-color>
+		<!-- Appearance settings belong to this key; changing them never changes a running timer. -->
+		<sdpi-item label="Style">
+			<sdpi-select setting="visualStyle" default="ring">
+				<option value="ring">Ring</option>
+				<option value="sweep-horizontal">Sweep left to right</option>
+				<option value="sweep-vertical">Sweep top to bottom</option>
+			</sdpi-select>
 		</sdpi-item>
+		<div id="ringColors">
+			<sdpi-item label="Number & ring">
+				<sdpi-color setting="color" default="#ff6347"></sdpi-color>
+			</sdpi-item>
+			<sdpi-item label="Background">
+				<sdpi-color setting="backgroundColor" default="#111111"></sdpi-color>
+			</sdpi-item>
+			<p class="note">Number and ring colors may be adjusted slightly for contrast against the background.</p>
+		</div>
+		<div id="sweepColors" hidden>
+			<sdpi-item label="Background">
+				<sdpi-color setting="sweepBackground" default="#ad422f"></sdpi-color>
+			</sdpi-item>
+			<sdpi-item label="Number">
+				<sdpi-select setting="sweepNumber" default="white">
+					<option value="white">White → black</option>
+					<option value="black">Black → white</option>
+				</sdpi-select>
+			</sdpi-item>
+			<p class="note">Choose a background that contrasts with the number. The swept area changes to white or black.</p>
+		</div>
 
 		<!-- Values must match FONT_IDS in src/core/key-style.ts. -->
 		<sdpi-item label="Font">
@@ -134,6 +156,13 @@
 		</p>
 
 		<script>
+			const ringColors = document.getElementById("ringColors");
+			const sweepColors = document.getElementById("sweepColors");
+			SDPIComponents.useSettings("visualStyle", (value) => {
+				const sweeping = value === "sweep-horizontal" || value === "sweep-vertical";
+				ringColors.hidden = sweeping;
+				sweepColors.hidden = !sweeping;
+			});
 			// Text entries have no `setting` attribute: sdpi-textfield and sdpi-textarea would save on every
 			// keystroke, so typing 60 would briefly save 6, and each keystroke in the notification text would
 			// rewrite the shared global settings. Instead an entry is saved when committed: when the field loses

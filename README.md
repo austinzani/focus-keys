@@ -1,6 +1,6 @@
 # Focus Keys
 
-A Mac-only Stream Deck plugin that turns keys into whole-minute countdown timers. Each key shows a large number of minutes and a progress ring; tap to start, pause or resume, hold to cancel. It can play a sound or show a notification when time is up, and can switch macOS Focus through your own Shortcuts. Designed for the Stream Deck Neo; it uses ordinary keys, so other Stream Deck models should work but are untested.
+A Mac-only Stream Deck plugin that turns keys into whole-minute countdown timers. Each key shows a large number of minutes and a progress ring or background sweep; tap to start, pause or resume, hold to cancel. It can play a sound or show a notification when time is up, and can switch macOS Focus through your own Shortcuts. Designed for the Stream Deck Neo; it uses ordinary keys, so other Stream Deck models should work but are untested.
 
 Requirements: macOS 12 or later, Stream Deck 7.1 or later. Mac only.
 

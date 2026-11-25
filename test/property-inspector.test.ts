@@ -40,7 +40,21 @@ describe("Property Inspector duration", () => {
 	});
 
 	it("commits without the sdpi debounce", () => {
-		expect(runPiScript().delays).toEqual([null, null]);
+		expect(runPiScript().delays).toEqual([undefined, null, null]);
+	});
+});
+
+describe("Property Inspector appearance", () => {
+	it("shows the relevant color controls for each style", () => {
+		const pi = runPiScript();
+		pi.settingsChanged("visualStyle", "ring");
+		expect(pi.field("ringColors").hidden).toBe(false);
+		expect(pi.field("sweepColors").hidden).toBe(true);
+		pi.settingsChanged("visualStyle", "sweep-horizontal");
+		expect(pi.field("ringColors").hidden).toBe(true);
+		expect(pi.field("sweepColors").hidden).toBe(false);
+		pi.settingsChanged("visualStyle", "sweep-vertical");
+		expect(pi.field("sweepColors").hidden).toBe(false);
 	});
 });
 

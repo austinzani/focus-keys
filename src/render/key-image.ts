@@ -13,9 +13,6 @@ const NUMBER_RADIUS = RING_RADIUS - RING_WIDTH / 2 - 4;
 /** Digits are never taller than this, in px; wider numbers are sized down to fit inside NUMBER_RADIUS. */
 const MAX_DIGIT_HEIGHT = 62;
 
-const NUMBER_COLOR = "#f5f5f5";
-/** A paused key's number: dimmed, still well above 4.5:1 on the background. */
-const PAUSED_NUMBER_COLOR = "#a3a3a3";
 /** A paused ring is the key color mixed this far toward PAUSED_GREY. */
 const PAUSED_MUTE = 0.6;
 const PAUSED_GREY = "#5a5a5a";
@@ -24,20 +21,20 @@ const RING_TRACK = "#2b2b2b";
 const FALLBACK_FONT_FAMILY = "-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 /**
- * Draws one key: a large centered whole-minute number on a dark background, plus a ring arc covering the
- * remaining fraction while running, frozen in a muted shade while paused. Never shows seconds.
- * Idle keys show their number in the key's color; running, paused and finished keys show it in white
- * (dimmed while paused) so the colored ring carries the state.
+ * Draws one key with a whole-minute number, either a shrinking ring or a growing background sweep.
+ * A paused ring is muted; a paused sweep stays frozen. Never shows seconds.
  * Digits are drawn from bundled font outlines, so the look never depends on fonts installed on the Mac.
  */
 export function renderKeySvg(render: KeyRender, fonts: Readonly<Record<string, GlyphFont>> = GLYPH_FONTS): string {
-	const { color } = render.style;
-	const numberColor = render.state === "idle" ? color : render.state === "paused" ? PAUSED_NUMBER_COLOR : NUMBER_COLOR;
+	const { color, visualStyle, backgroundColor, sweepBackground, sweepNumber } = render.style;
+	const isRing = visualStyle === "ring";
+	const numberColor = isRing ? color : sweepNumber === "black" ? "#000000" : "#ffffff";
 	const ringColor = render.state === "paused" ? toHex(mix(toRgb(color), toRgb(PAUSED_GREY), PAUSED_MUTE)) : color;
+	const trackColor = backgroundColor === KEY_BACKGROUND ? RING_TRACK : toHex(mix(toRgb(backgroundColor), toRgb(color), 0.2));
 
 	const ring =
-		render.state === "running" || render.state === "paused"
-			? `<circle cx="${CENTER}" cy="${CENTER}" r="${RING_RADIUS}" fill="none" stroke="${RING_TRACK}" stroke-width="${RING_WIDTH}"/>` +
+		isRing && (render.state === "running" || render.state === "paused")
+			? `<circle cx="${CENTER}" cy="${CENTER}" r="${RING_RADIUS}" fill="none" stroke="${trackColor}" stroke-width="${RING_WIDTH}"/>` +
 				`<circle data-role="progress" cx="${CENTER}" cy="${CENTER}" r="${RING_RADIUS}" fill="none" stroke="${ringColor}" stroke-width="${RING_WIDTH}" ` +
 				`stroke-dasharray="${fmt(CIRCUMFERENCE * render.ring)} ${fmt(CIRCUMFERENCE)}" transform="rotate(-90 ${CENTER} ${CENTER})"/>`
 			: "";
@@ -46,12 +43,24 @@ export function renderKeySvg(render: KeyRender, fonts: Readonly<Record<string, G
 	// The key's font, else the default font, else plain text: whichever first has every digit needed.
 	const font = [fonts[render.style.font], fonts[DEFAULT_FONT]].find((f) => f !== undefined && hasDigits(f, text));
 	const number = font !== undefined ? outlinedNumber(text, font, numberColor) : textNumber(text, numberColor);
+	let sweep = "";
+	if (!isRing) {
+		const elapsed = render.state === "done" ? 1 : render.state === "idle" ? 0 : Math.max(0, Math.min(1, 1 - render.ring));
+		const width = visualStyle === "sweep-horizontal" ? SIZE * elapsed : SIZE;
+		const height = visualStyle === "sweep-vertical" ? SIZE * elapsed : SIZE;
+		const inverted = sweepNumber === "black" ? "#ffffff" : "#000000";
+		const sweepColor = sweepNumber === "black" ? "#000000" : "#ffffff";
+		const invertedNumber = font !== undefined ? outlinedNumber(text, font, inverted) : textNumber(text, inverted);
+		sweep = `<defs><clipPath id="sweep-clip"><rect x="0" y="0" width="${fmt(width)}" height="${fmt(height)}"/></clipPath></defs>` +
+			`<rect data-role="sweep" width="${fmt(width)}" height="${fmt(height)}" fill="${sweepColor}"/>` +
+			number + `<g clip-path="url(#sweep-clip)">${invertedNumber}</g>`;
+	}
 
 	return (
 		`<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}">` +
-		`<rect width="${SIZE}" height="${SIZE}" fill="${KEY_BACKGROUND}"/>` +
+		`<rect width="${SIZE}" height="${SIZE}" fill="${isRing ? backgroundColor : sweepBackground}"/>` +
 		ring +
-		number +
+		(isRing ? number : sweep) +
 		`</svg>`
 	);
 }

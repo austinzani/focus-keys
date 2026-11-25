@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { FONT_IDS, type FontId } from "../src/core/key-style";
+import { FONT_IDS, parseKeyStyle, type FontId } from "../src/core/key-style";
 import type { KeyRender } from "../src/core/coordinator";
 import { GLYPH_FONTS } from "../src/render/glyphs.generated";
 import { keyImageDataUrl, renderKeySvg } from "../src/render/key-image";
 
-const style = { color: "#1e90ff", font: "inter" as FontId };
+const style = parseKeyStyle({ color: "#1e90ff", font: "inter" });
 const idle = (minutes: number, s = style): KeyRender => ({ keyId: "k", state: "idle", minutes, style: s });
 const running = (minutes: number, ring: number): KeyRender => ({ keyId: "k", state: "running", minutes, ring, style });
 const paused = (minutes: number, ring: number): KeyRender => ({ keyId: "k", state: "paused", minutes, ring, style });
@@ -56,12 +56,12 @@ describe("key image", () => {
 		expect(svg).toMatch(/<g data-role="number" data-text="30" fill="#1e90ff">/);
 	});
 
-	it("draws a running key with a white number and an arc in the key's color covering the remaining fraction", () => {
+	it("keeps the number in the key's color while the ring shows the remaining fraction", () => {
 		const full = renderKeySvg(running(5, 1));
 		const half = renderKeySvg(running(3, 0.5));
 
 		expect(numberText(half)).toBe("3");
-		expect(numberFill(half)).toBe("#f5f5f5");
+		expect(numberFill(half)).toBe("#1e90ff");
 		expect(arcStroke(half)).toBe("#1e90ff");
 		const dash = (svg: string) => progressArc(svg)?.match(/stroke-dasharray="([\d.]+) ([\d.]+)"/)?.slice(1).map(Number);
 		const [fullOn, circumference] = dash(full)!;
@@ -70,7 +70,7 @@ describe("key image", () => {
 		expect(halfOn).toBeCloseTo(circumference! / 2);
 	});
 
-	it("draws a paused key with the same frozen arc in a muted shade of its color and a dimmed number", () => {
+	it("draws a paused key with the same frozen arc in a muted shade and the chosen number color", () => {
 		const run = renderKeySvg(running(4, 0.7));
 		const pause = renderKeySvg(paused(4, 0.7));
 		const dashOn = (svg: string) => progressArc(svg)?.match(/stroke-dasharray="([\d.]+)/)?.[1];
@@ -79,15 +79,15 @@ describe("key image", () => {
 		expect(dashOn(pause)).toBe(dashOn(run));
 		// #1e90ff mixed 60% toward grey #5a5a5a: still blue-ish, clearly darker than running.
 		expect(arcStroke(pause)).toBe("#42709c");
-		expect(numberFill(pause)).toBe("#a3a3a3");
-		expect(numberFill(pause)).not.toBe(numberFill(run));
+		expect(numberFill(pause)).toBe("#1e90ff");
+		expect(numberFill(pause)).toBe(numberFill(run));
 	});
 
-	it("draws a finished key as a white 0 with no arc", () => {
+	it("draws a finished key as a 0 in the selected color with no arc", () => {
 		const svg = renderKeySvg({ keyId: "k", state: "done", minutes: 0, style });
 
 		expect(numberText(svg)).toBe("0");
-		expect(numberFill(svg)).toBe("#f5f5f5");
+		expect(numberFill(svg)).toBe("#1e90ff");
 		expect(progressArc(svg)).toBeUndefined();
 	});
 

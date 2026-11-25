@@ -1,6 +1,6 @@
 # Focus Keys user guide
 
-Focus Keys turns Stream Deck keys into whole-minute countdown timers. Each key is one preset (for example 5, 15, 30 or 60 minutes). All keys share one timer: starting one key replaces whatever another key was running. The key shows the minutes left and a ring for the remaining fraction. It never shows seconds.
+Focus Keys turns Stream Deck keys into whole-minute countdown timers. Each key is one preset (for example 5, 15, 30 or 60 minutes). All keys share one timer: starting one key replaces whatever another key was running. The key shows the minutes left and a ring or background sweep for progress. It never shows seconds.
 
 ## Requirements
 
@@ -20,7 +20,7 @@ Updating works the same way: double-click the newer file. Keys and their setting
 
 1. Drag **Timer Preset** onto four keys. Each new key shows a large tomato-colored **5**.
 2. Select each key and set **Minutes** in the Property Inspector, for example **5**, **15**, **30** and **60**. The field saves when you press Enter, click away, or close the Property Inspector.
-3. Optionally give each key its own **Color** and **Font**.
+3. Optionally give each key its own **Style**, colors and **Font**.
 4. Optionally drag **Break** onto a fifth key for breaks. It starts teal and works like a preset key, but never turns Focus on (see below).
 5. Optionally set up a completion sound or notification and Focus switching (below). Those settings are shared by all timer keys.
 
@@ -29,14 +29,14 @@ Updating works the same way: double-click the newer file. Keys and their setting
 | Action | Result |
 | --- | --- |
 | Tap an idle or finished key | Starts a timer for that key's minutes. |
-| Tap the running key | Pauses. The number and ring freeze, the ring turns a muted shade and the number dims. |
+| Tap the running key | Pauses. The number and progress freeze; a ring turns a muted shade. |
 | Tap the paused key | Resumes from where it paused. |
 | Tap another key while a timer is running or paused | Replaces it. The old key goes back to its idle number. No alert plays for the replaced timer. |
 | Hold the running or paused key for about half a second (600 ms) | Cancels while your finger is still down. The key goes back to its idle number. No alert. |
 | Hold a finished key (showing **0**) | Clears it back to its idle number. |
 | Hold any other key | Nothing. A hold never starts a timer. |
 
-Taps count when you release the key, so a hold is never also a tap. When a timer reaches zero its key shows **0** with no ring until you tap it (starts again) or hold it (clears it).
+Taps count when you release the key, so a hold is never also a tap. When a timer reaches zero its key shows **0** until you tap it (starts again) or hold it (clears it). A finished ring disappears; a finished sweep fills the background.
 
 The number counts whole minutes and changes when that many full minutes remain: a 5-minute timer shows **5** until four minutes are left, then **4**.
 
@@ -49,17 +49,11 @@ The number counts whole minutes and changes when that many full minutes remain: 
 
 ## Appearance
 
-Each key has its own **Color** and **Font**. They save as soon as you change them and only redraw that key; they never affect a running timer.
+Each key has its own **Style**, colors and **Font**. Changes redraw only that key and never affect a running timer.
 
-| Key state | Number | Ring |
-| --- | --- | --- |
-| Idle | Key color | None |
-| Running | White | Key color, shrinking as time passes, on a dark grey track |
-| Paused | Dimmed grey | Muted key color, frozen |
-| Finished | White **0** | None |
-
-- The default color is tomato (`#ff6347`). Any color can be picked.
-- A color too dark to read on the dark key background (navy, black) is lightened just enough to stay readable. The Property Inspector still shows the color you picked.
+- **Ring** (default): choose a background and a number color; the ring matches the number and shrinks as time passes. The number keeps its color when running. A paused ring is muted. Existing keys keep their chosen number color and dark background.
+- **Sweep left to right** or **Sweep top to bottom**: choose the starting background color and a white or black number. As time passes, white numbers become black where a white sweep passes, and black numbers become white where a black sweep passes. At completion the background is fully swept. A paused sweep stays frozen.
+- Ring numbers and rings are adjusted toward a contrasting shade if needed to remain visible against their background. For sweep styles, choose a background that contrasts with your selected number; the color is used as chosen.
 - Fonts: **Inter** (default), **Nunito**, **Oswald**, **JetBrains Mono**, **Bitter**. The digits are built into the plugin, so they look the same whatever fonts your Mac has.
 - The action has no title field. If a key shows a picture instead of the number, it has a custom image set in the Stream Deck app; clear it.
 
