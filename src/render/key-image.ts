@@ -1,4 +1,4 @@
-import { contrastingNumber, DEFAULT_FONT, KEY_BACKGROUND, mix, toHex, toRgb } from "../core/key-style";
+import { DEFAULT_FONT, KEY_BACKGROUND, mix, toHex, toRgb } from "../core/key-style";
 import type { KeyRender } from "../core/coordinator";
 import { GLYPH_FONTS, type GlyphFont } from "./glyphs.generated";
 
@@ -48,12 +48,7 @@ export function renderKeySvg(render: KeyRender, fonts: Readonly<Record<string, G
 		const elapsed = render.state === "done" ? 1 : render.state === "idle" ? 0 : Math.max(0, Math.min(1, 1 - render.ring));
 		const width = visualStyle === "sweep-horizontal" ? SIZE * elapsed : SIZE;
 		const height = visualStyle === "sweep-vertical" ? SIZE * elapsed : SIZE;
-		const inverted = contrastingNumber(sweepEnd);
-		const sweepColor = sweepEnd;
-		const invertedNumber = font !== undefined ? outlinedNumber(text, font, inverted) : textNumber(text, inverted);
-		sweep = `<defs><clipPath id="sweep-clip"><rect x="0" y="0" width="${fmt(width)}" height="${fmt(height)}"/></clipPath></defs>` +
-			`<rect data-role="sweep" width="${fmt(width)}" height="${fmt(height)}" fill="${sweepColor}"/>` +
-			number + `<g clip-path="url(#sweep-clip)">${invertedNumber}</g>`;
+		sweep = `<rect data-role="sweep" width="${fmt(width)}" height="${fmt(height)}" fill="${sweepEnd}"/>` + number;
 	}
 
 	return (

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { contrastingNumber, FONT_IDS, VISUAL_STYLES, legacySweepBackground, parseKeyStyle, sweepColorSettings } from "../src/core/key-style";
+import { FONT_IDS, VISUAL_STYLES, legacySweepBackground, parseKeyStyle, sweepColorSettings } from "../src/core/key-style";
 import { GLYPH_FONTS } from "../src/render/glyphs.generated";
 import { piOptions } from "./support";
 
@@ -68,8 +68,4 @@ describe("key style settings", () => {
 		expect(parseKeyStyle({ sweepNumber: "#ABC", sweepEnd: "#123456" })).toMatchObject({ sweepNumber: "#aabbcc", sweepEnd: "#123456" });
 	});
 
-	it("chooses contrasting text for light and dark sweep colors", () => {
-		expect(contrastingNumber("#ffff00")).toBe("#000000");
-		expect(contrastingNumber("#000080")).toBe("#ffffff");
-	});
 });

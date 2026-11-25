@@ -52,7 +52,7 @@ The number counts whole minutes and changes when that many full minutes remain: 
 Each key has its own **Style**, colors and **Font**. Changes redraw only that key and never affect a running timer.
 
 - **Ring** (default): choose a background, number color and ring color independently; the ring shrinks as time passes. The number keeps its color when running. A paused ring is muted. Existing keys keep their chosen number and ring color and background.
-- **Sweep left to right** or **Sweep top to bottom**: choose the starting background, number and sweep colors independently. The part of the number under the sweep changes to black or white, whichever contrasts better with the sweep. At completion the background is fully swept. A paused sweep stays frozen.
+- **Sweep left to right** or **Sweep top to bottom**: choose the starting background, number and sweep colors independently. The number keeps its chosen color throughout. At completion the background is fully swept. A paused sweep stays frozen.
 - The background color is shared by all three styles for that key. Colors are shown as chosen, so pick a number and background with enough contrast to read comfortably.
 - Fonts: **Inter** (default), **Nunito**, **Oswald**, **JetBrains Mono**, **Bitter**. The digits are built into the plugin, so they look the same whatever fonts your Mac has.
 - The action has no title field. If a key shows a picture instead of the number, it has a custom image set in the Stream Deck app; clear it.

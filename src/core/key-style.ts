@@ -97,13 +97,3 @@ export function toHex(rgb: Rgb): string {
 export function mix(a: Rgb, b: Rgb, t: number): Rgb {
 	return [0, 1, 2].map((i) => a[i]! + (b[i]! - a[i]!) * t) as Rgb;
 }
-
-/** Black or white, whichever contrasts more with the chosen sweep color. */
-export function contrastingNumber(background: string): string {
-	const [r, g, b] = toRgb(background).map((value) => {
-		const s = value / 255;
-		return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-	}) as Rgb;
-	const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-	return (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) ? "#000000" : "#ffffff";
-}

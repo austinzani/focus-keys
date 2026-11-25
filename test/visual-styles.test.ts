@@ -14,6 +14,21 @@ function colorAt(data: Buffer, x: number, y: number): string {
 }
 
 describe("visual styles rendered as pixels", () => {
+	it.each(["sweep-horizontal", "sweep-vertical"])("keeps the chosen sweep number color in every timer state for %s", (visualStyle) => {
+		const style = parseKeyStyle({ visualStyle, backgroundColor: "#ff8800", sweepNumber: "#ffff44", sweepEnd: "#ffffff" });
+		const states: KeyRender[] = [
+			{ keyId: "a", state: "idle", minutes: 5, style },
+			{ keyId: "a", state: "running", minutes: 3, ring: 0.5, style },
+			{ keyId: "a", state: "paused", minutes: 3, ring: 0.5, style },
+			{ keyId: "a", state: "done", minutes: 0, style },
+		];
+		for (const state of states) {
+			const svg = renderKeySvg(state);
+			const numberGroups = [...svg.matchAll(/<g data-role="number"[^>]*fill="([^"]+)"/g)];
+			expect(numberGroups.map((group) => group[1])).toEqual(["#ffff44"]);
+			expect(svg).not.toContain("clip-path");
+		}
+	});
 	it("keeps a white ring number exactly white on an orange background", () => {
 		const style = parseKeyStyle({ color: "#ffffff", backgroundColor: "#ff8800" });
 		const render: KeyRender = { keyId: "a", state: "idle", minutes: 5, style };
@@ -72,7 +87,7 @@ describe("visual styles rendered as pixels", () => {
 		let coveredPixels = 0;
 		for (let y = 35; y < 110; y++) for (let x = 35; x < 110; x++) {
 			if ((vertical ? y : x) >= 72 && colorAt(data, x, y) === "#33ff44") originalPixels++;
-			if ((vertical ? y : x) < 72 && colorAt(data, x, y) === "#ffffff") coveredPixels++;
+			if ((vertical ? y : x) < 72 && colorAt(data, x, y) === "#33ff44") coveredPixels++;
 		}
 		expect(originalPixels).toBeGreaterThan(10);
 		expect(coveredPixels).toBeGreaterThan(10);
@@ -83,22 +98,19 @@ describe("visual styles rendered as pixels", () => {
 		["sweep-vertical", "white", "#ffffff", "#a04030"],
 		["sweep-horizontal", "black", "#000000", "#a04030"],
 		["sweep-vertical", "black", "#000000", "#a04030"],
-	])("sweeps %s with %s numbers and inverts the covered digits", (visualStyle, sweepNumber, swept, background) => {
+	])("sweeps %s while keeping the chosen %s number", (visualStyle, sweepNumber, swept, background) => {
 		const style = parseKeyStyle({ visualStyle, sweepNumber, sweepBackground: background });
 		const half = pixels({ keyId: "a", state: "running", minutes: 3, ring: 0.5, style });
 		const vertical = visualStyle === "sweep-vertical";
 		expect(colorAt(half, 10, 10)).toBe(swept);
 		expect(colorAt(half, vertical ? 10 : 130, vertical ? 130 : 10)).toBe(background);
-		const foreground = sweepNumber === "white" ? "#000000" : "#ffffff";
 		const original = sweepNumber === "white" ? "#ffffff" : "#000000";
-		let invertedPixels = 0;
 		let originalPixels = 0;
 		for (let y = 35; y < 110; y++) for (let x = 35; x < 110; x++) {
-			if ((vertical ? y : x) < 72 && colorAt(half, x, y) === foreground) invertedPixels++;
 			if ((vertical ? y : x) >= 72 && colorAt(half, x, y) === original) originalPixels++;
 		}
-		expect(invertedPixels).toBeGreaterThan(10);
 		expect(originalPixels).toBeGreaterThan(10);
+		expect(renderKeySvg({ keyId: "a", state: "running", minutes: 3, ring: 0.5, style })).toContain(`data-text="3" fill="${original}"`);
 	});
 
 	it("starts unswept, freezes when paused and fills the background when done", () => {
