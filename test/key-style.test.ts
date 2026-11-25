@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { FONT_IDS, VISUAL_STYLES, parseKeyStyle } from "../src/core/key-style";
+import { FONT_IDS, VISUAL_STYLES, legacySweepBackground, parseKeyStyle } from "../src/core/key-style";
 import { GLYPH_FONTS } from "../src/render/glyphs.generated";
 import { piOptions } from "./support";
 
@@ -19,11 +19,20 @@ describe("key style settings", () => {
 		expect(piOptions("visualStyle")).toEqual([...VISUAL_STYLES]);
 		expect(piOptions("sweepNumber")).toEqual(["white", "black"]);
 		expect(parseKeyStyle({ visualStyle: "sweep-vertical", backgroundColor: "#eee", sweepBackground: "#1A2B3C", sweepNumber: "black" })).toMatchObject({
-			visualStyle: "sweep-vertical", backgroundColor: "#eeeeee", sweepBackground: "#1a2b3c", sweepNumber: "black",
+			visualStyle: "sweep-vertical", backgroundColor: "#eeeeee", sweepBackground: "#eeeeee", sweepNumber: "black",
 		});
 		expect(parseKeyStyle({ visualStyle: "unknown", backgroundColor: "bad", sweepBackground: "bad", sweepNumber: "blue" })).toMatchObject({
-			visualStyle: "ring", backgroundColor: "#111111", sweepBackground: "#ad422f", sweepNumber: "white",
+			visualStyle: "ring", backgroundColor: "#111111", sweepBackground: "#111111", sweepNumber: "white",
 		});
+	});
+
+	it("preserves and migrates an older sweep background without overwriting a chosen background", () => {
+		const old = { visualStyle: "sweep-vertical", sweepBackground: "#1A2B3C" };
+		expect(parseKeyStyle(old).backgroundColor).toBe("#1a2b3c");
+		expect(legacySweepBackground(old)).toBe("#1a2b3c");
+		expect(legacySweepBackground({ ...old, backgroundColor: "#ff8800" })).toBeUndefined();
+		expect(legacySweepBackground({ ...old, visualStyle: "ring" })).toBeUndefined();
+		expect(legacySweepBackground({ ...old, sweepBackground: "invalid" })).toBeUndefined();
 	});
 
 	it("keeps a valid font and color, lowercasing and expanding short hex", () => {
@@ -40,22 +49,9 @@ describe("key style settings", () => {
 		}
 	});
 
-	it("lightens a color too dark to see on the dark key until it has 4.5:1 contrast", () => {
-		const navy = parseKeyStyle({ color: "#000080" }).color;
-		expect(navy).not.toBe("#000080");
-		expect(contrastOnKey(navy)).toBeGreaterThanOrEqual(4.5);
-		expect(contrastOnKey(navy)).toBeLessThan(5.5); // lightened only as much as needed
-		expect(parseKeyStyle({ color: "#000000" }).color).not.toBe("#000000");
-		// Already visible colors are kept exactly.
-		expect(parseKeyStyle({ color: "#ffd700" }).color).toBe("#ffd700");
+	it("preserves chosen number and background colors exactly", () => {
+		expect(parseKeyStyle({ color: "#ffffff", backgroundColor: "#ff8800" })).toMatchObject({ color: "#ffffff", backgroundColor: "#ff8800" });
+		expect(parseKeyStyle({ color: "#000080" }).color).toBe("#000080");
+		expect(parseKeyStyle({ color: "#000000" }).color).toBe("#000000");
 	});
 });
-
-/** WCAG contrast against the key background #111111, computed independently of the implementation. */
-function contrastOnKey(hex: string): number {
-	const lum = (h: string) => {
-		const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-		return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
-	};
-	return (lum(hex) + 0.05) / (lum("#111111") + 0.05);
-}

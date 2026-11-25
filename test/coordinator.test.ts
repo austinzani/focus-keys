@@ -15,7 +15,7 @@ class ManualClock implements Clock {
 
 const MIN = 60_000;
 /** What a key with no color or font settings is drawn with. */
-const DEFAULT_STYLE = { color: "#ff6347", font: "inter", visualStyle: "ring", backgroundColor: "#111111", sweepBackground: "#ad422f", sweepNumber: "white" };
+const DEFAULT_STYLE = { color: "#ff6347", font: "inter", visualStyle: "ring", backgroundColor: "#111111", sweepBackground: "#111111", sweepNumber: "white" };
 
 function setup() {
 	const clock = new ManualClock();

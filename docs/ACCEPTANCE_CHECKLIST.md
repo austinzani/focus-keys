@@ -20,7 +20,7 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 
 - [ ] 1. Remove the dev link: `npx streamdeck unlink com.austinzani.focus-keys`. In Stream Deck › Preferences › Plugins, Focus Keys is gone, and `~/Library/Application Support/com.elgato.StreamDeck/Plugins/` has no `com.austinzani.focus-keys.sdPlugin`.
 - [ ] 2. Optional, closer to a user's Mac: `npx streamdeck dev --disable`, and move `~/Library/Application Support/com.austinzani.focus-keys/` aside for a fresh state.
-- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Focus Keys** category appears with **Timer Preset** and **Break** (cup icon), each with its icon in the action list and in Preferences › Plugins showing version 0.1.2.0.
+- [ ] 3. Double-click the `.streamDeckPlugin` file. Stream Deck asks to install; confirm. Expected: the **Focus Keys** category appears with **Timer Preset** and **Break** (cup icon), each with its icon in the action list and in Preferences › Plugins showing version 0.1.3.0.
 - [ ] 4. The installed folder's `logs/` contains a log with `Focus Keys plugin connected` and no errors.
 
 ## 2. Four-key timer
@@ -43,12 +43,13 @@ One real-device pass on the Mac and Neo before Marketplace submission. It replac
 Compare with the contact sheets from `npm run preview` if useful.
 
 - [ ] 1. With default color, for each font (Inter, Nunito, Oswald, JetBrains Mono, Bitter) on all keys, plus a key set to **180** if one is free: idle numbers are large, sharp, centered and never clipped; running number and ring are clear and the ring doesn't touch the digits; paused is readable and clearly different from running at a glance; a finished **0** is readable.
-- [ ] 2. Colors: blue, green, yellow, white, mid grey `#808080`, navy. Each key shows its own color. Navy is drawn lighter but still blue and visible. Paused stays distinguishable from running, and the muted paused ring is visible against the track.
+- [ ] 2. Colors: blue, green, yellow, white, mid grey `#808080`, navy. Each key shows its chosen color without changing it. Paused stays distinguishable from running, and the muted paused ring is visible against the track for contrasting colors.
 - [ ] 3. Mid-timer, change the running key's color, then its font. It redraws at once and the minutes and ring carry on. Changing another key's look doesn't affect the running key.
 - [ ] 4. Reopen Stream Deck. Every key keeps its color and font.
 - [ ] 5. Note any font or color that's hard to read on the Neo.
 - [ ] 6. Set a colored ring background and contrasting number color: idle, running, paused and finished keys use the background and the selected number color, and the ring matches it.
 - [ ] 7. Try left-to-right and top-to-bottom sweeps with white and black numbers. The changed area grows in the selected direction; the covered part of the number inverts. Pause freezes the sweep, completion fills the background, and the selected style and colors survive a restart. Change styles mid-timer and verify the countdown continues.
+- [ ] 8. Set a white ring number on an orange background: the number remains white. Switch to either sweep: the background remains the same orange, and the sweep number picker is available.
 
 ## 4. Alerts
 

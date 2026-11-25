@@ -59,7 +59,7 @@ npm run package      # build, validate and pack (see Packaging)
 ## Layout
 
 - `src/core/coordinator.ts`: timer logic with no SDK imports. Takes key appearances, settings changes, key down/up and clock ticks; returns the image each key should show and session transition events. A running session stores an absolute end time; a paused one stores its frozen remaining time. `HOLD_MS` (600), `DEFAULT_DURATION_MINUTES` (5), `MAX_DURATION_MINUTES` (180).
-- `src/core/key-style.ts`: validates each key's style, colors and font; adjusts the ring/number color to at least 4.5:1 contrast against its chosen background.
+- `src/core/key-style.ts`: validates each key's style, colors and font while preserving the chosen colors; migrates a previously saved separate sweep background to the shared background.
 - `src/render/key-image.ts`: draws a key as SVG. Digits are path outlines from `src/render/glyphs.generated.ts`, so the look doesn't depend on installed fonts.
   A paused ring mixes its color 60% toward `#5a5a5a`; a paused sweep freezes in place. Sweep styles use a clipped second copy of the number to invert its color as the background changes.
 - `src/core/alerts.ts`: validates the shared alert settings and decides what a completion does.

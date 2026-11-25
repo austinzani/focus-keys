@@ -14,6 +14,23 @@ function colorAt(data: Buffer, x: number, y: number): string {
 }
 
 describe("visual styles rendered as pixels", () => {
+	it("keeps a white ring number exactly white on an orange background", () => {
+		const style = parseKeyStyle({ color: "#ffffff", backgroundColor: "#ff8800" });
+		const render: KeyRender = { keyId: "a", state: "idle", minutes: 5, style };
+		const data = pixels(render);
+		expect(colorAt(data, 4, 4)).toBe("#ff8800");
+		let whitePixels = 0;
+		for (let y = 35; y < 110; y++) for (let x = 35; x < 110; x++) {
+			if (colorAt(data, x, y) === "#ffffff") whitePixels++;
+		}
+		expect(whitePixels).toBeGreaterThan(10);
+	});
+
+	it("uses the chosen background when switching from ring to sweep", () => {
+		const style = parseKeyStyle({ visualStyle: "sweep-horizontal", color: "#ffffff", backgroundColor: "#ff8800" });
+		const data = pixels({ keyId: "a", state: "idle", minutes: 5, style });
+		expect(colorAt(data, 4, 4)).toBe("#ff8800");
+	});
 	it("keeps a custom ring background and number color when idle and running", () => {
 		const style = parseKeyStyle({ color: "#ffffff", backgroundColor: "#164a72" });
 		const idle = pixels({ keyId: "a", state: "idle", minutes: 5, style });

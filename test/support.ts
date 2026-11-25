@@ -30,10 +30,8 @@ export function runPiScript() {
 	const field = (id: string) => fields.get(id) ?? fields.set(id, new EventTarget()).get(id)!;
 	const saved = { settings: [] as PiSave[], global: [] as PiSave[] };
 	const delays: unknown[] = [];
-	const callbacks = new Map<string, (value: unknown) => void>();
-	const fakeUse = (into: PiSave[]) => (key: string, onChange: (value: unknown) => void, delay: unknown) => {
+	const fakeUse = (into: PiSave[]) => (key: string, _onChange: unknown, delay: unknown) => {
 		delays.push(delay);
-		callbacks.set(key, onChange);
 		return [async () => undefined, (value: unknown) => void into.push({ key, value })];
 	};
 	const window = new EventTarget();
@@ -68,7 +66,6 @@ export function runPiScript() {
 		close: () => window.dispatchEvent(new Event("pagehide")),
 		/** Delivers a message the plugin sent to the inspector. */
 		fromPlugin: (payload: unknown) => pluginMessages.forEach((fn) => fn({ payload })),
-		settingsChanged: (key: string, value: unknown) => callbacks.get(key)?.(value),
 		field: (id: string) => field(id) as EventTarget & { value?: string; textContent?: string; hidden?: boolean },
 	};
 }

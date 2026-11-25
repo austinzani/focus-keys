@@ -18,6 +18,7 @@ import { AlertDispatcher } from "../alerts/dispatcher";
 import { AfplaySoundPlayer, FallbackNotifier, HelperNotifier, OsascriptNotifier } from "../alerts/macos";
 import { systemClock } from "../core/clock";
 import { defaultColorFor, parseDuration, type PresetSettings, type TimerKind } from "../core/coordinator";
+import { legacySweepBackground } from "../core/key-style";
 import { FocusDispatcher } from "../focus/dispatcher";
 import { answerShortcutPicker } from "../focus/picker";
 import { ShortcutsCli } from "../focus/shortcuts";
@@ -105,8 +106,10 @@ export class TimerKeys {
 		this.#controller.keyDisappeared(keyId);
 	}
 
-	settingsChanged(keyId: string, settings: PresetSettings): void {
+	settingsChanged(keyId: string, settings: PresetSettings, kind: TimerKind): void {
 		this.#controller.settingsChanged(keyId, settings);
+		const key = this.#keys.get(keyId);
+		if (key && legacySweepBackground(settings) !== undefined) this.#saveEffectiveSettings(key, settings, kind);
 	}
 
 	/** The Property Inspector saves each committed entry (Enter, blur, close); once it closes, an unusable entry is replaced. */
@@ -162,6 +165,8 @@ export class TimerKeys {
 		const fill: PresetSettings = {};
 		if (parseDuration(settings.durationMinutes) === undefined) fill.durationMinutes = String(this.#controller.presetMinutes(key.id));
 		if (kind === "break" && typeof settings.color !== "string") fill.color = defaultColorFor(kind);
+		const migratedBackground = legacySweepBackground(settings);
+		if (migratedBackground !== undefined) fill.backgroundColor = migratedBackground;
 		if (Object.keys(fill).length === 0) return;
 		key.setSettings({ ...settings, ...fill }).catch((err: unknown) => streamDeck.logger.error("setSettings failed", err));
 	}
@@ -188,7 +193,7 @@ class TimerAction extends SingletonAction<PresetSettings> {
 
 	/** Fired when the Property Inspector saves this key's settings. */
 	override onDidReceiveSettings(ev: DidReceiveSettingsEvent<PresetSettings>): void {
-		this.#timer.settingsChanged(ev.action.id, ev.payload.settings);
+		this.#timer.settingsChanged(ev.action.id, ev.payload.settings, this.#kind);
 	}
 
 	override onPropertyInspectorDidDisappear(ev: PropertyInspectorDidDisappearEvent<PresetSettings>): void {

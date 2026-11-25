@@ -53,7 +53,7 @@ Each key has its own **Style**, colors and **Font**. Changes redraw only that ke
 
 - **Ring** (default): choose a background and a number color; the ring matches the number and shrinks as time passes. The number keeps its color when running. A paused ring is muted. Existing keys keep their chosen number color and dark background.
 - **Sweep left to right** or **Sweep top to bottom**: choose the starting background color and a white or black number. As time passes, white numbers become black where a white sweep passes, and black numbers become white where a black sweep passes. At completion the background is fully swept. A paused sweep stays frozen.
-- Ring numbers and rings are adjusted toward a contrasting shade if needed to remain visible against their background. For sweep styles, choose a background that contrasts with your selected number; the color is used as chosen.
+- The background color is shared by all three styles for that key. Colors are shown as chosen, so pick a number and background with enough contrast to read comfortably.
 - Fonts: **Inter** (default), **Nunito**, **Oswald**, **JetBrains Mono**, **Bitter**. The digits are built into the plugin, so they look the same whatever fonts your Mac has.
 - The action has no title field. If a key shows a picture instead of the number, it has a custom image set in the Stream Deck app; clear it.
 

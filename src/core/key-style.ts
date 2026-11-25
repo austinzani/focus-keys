@@ -19,23 +19,23 @@ export type FontId = (typeof FONT_IDS)[number];
 
 export const DEFAULT_FONT: FontId = "inter";
 export const DEFAULT_COLOR = "#ff6347";
-export const DEFAULT_SWEEP_BACKGROUND = "#ad422f";
 /** A Break key's color until one is chosen. */
 export const BREAK_DEFAULT_COLOR = "#3cc4a8";
 /** Every key is drawn on this background. */
 export const KEY_BACKGROUND = "#111111";
-/** A chosen color is lightened until it reaches this WCAG contrast ratio against the key background. */
-const MIN_CONTRAST = 4.5;
 
 /** Reads the color and font settings; anything unusable falls back to the default (`defaultColor` for the color). */
 export function parseKeyStyle(settings: { color?: unknown; font?: unknown; visualStyle?: unknown; backgroundColor?: unknown; sweepBackground?: unknown; sweepNumber?: unknown }, defaultColor: string = DEFAULT_COLOR): KeyStyle {
-	const backgroundColor = parseColor(settings.backgroundColor, KEY_BACKGROUND);
+	const visualStyle = VISUAL_STYLES.find((style) => style === settings.visualStyle) ?? "ring";
+	// Older sweep keys stored a separate background; preserve it until the key has a shared background.
+	const legacyBackground = visualStyle === "ring" ? KEY_BACKGROUND : parseColor(settings.sweepBackground, KEY_BACKGROUND);
+	const backgroundColor = parseColor(settings.backgroundColor, legacyBackground);
 	return {
-		color: ensureVisible(parseColor(settings.color, defaultColor), backgroundColor),
+		color: parseColor(settings.color, defaultColor),
 		font: parseFont(settings.font),
-		visualStyle: VISUAL_STYLES.find((style) => style === settings.visualStyle) ?? "ring",
+		visualStyle,
 		backgroundColor,
-		sweepBackground: parseColor(settings.sweepBackground, DEFAULT_SWEEP_BACKGROUND),
+		sweepBackground: backgroundColor,
 		sweepNumber: settings.sweepNumber === "black" ? "black" : "white",
 	};
 }
@@ -52,17 +52,12 @@ function parseColor(value: unknown, defaultColor: string): string {
 	return hex.toLowerCase();
 }
 
-/** Gently adjusts a ring/number color toward black or white until it stands out on its background. */
-function ensureVisible(hex: string, background: string): string {
-	const rgb = toRgb(hex);
-	const bg = toRgb(background);
-	const target: Rgb = contrast([255, 255, 255], bg) >= contrast([0, 0, 0], bg) ? [255, 255, 255] : [0, 0, 0];
-	// Integer steps so the last one is exactly t = 1 (pure white); adding 0.02 repeatedly would drift past it.
-	for (let i = 0; i <= 50; i++) {
-		const mixed = mix(rgb, target, i / 50);
-		if (contrast(mixed, bg) >= MIN_CONTRAST) return i === 0 ? hex : toHex(mixed);
-	}
-	return toHex(target);
+/** Move a previously saved sweep background into the shared background setting. */
+export function legacySweepBackground(settings: { visualStyle?: unknown; backgroundColor?: unknown; sweepBackground?: unknown }): string | undefined {
+	if (settings.visualStyle !== "sweep-horizontal" && settings.visualStyle !== "sweep-vertical") return undefined;
+	if (settings.backgroundColor !== undefined || typeof settings.sweepBackground !== "string") return undefined;
+	if (!/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(settings.sweepBackground)) return undefined;
+	return parseColor(settings.sweepBackground, KEY_BACKGROUND);
 }
 
 export type Rgb = [number, number, number];
@@ -78,18 +73,4 @@ export function toHex(rgb: Rgb): string {
 /** Linear blend: t = 0 gives a, t = 1 gives b. */
 export function mix(a: Rgb, b: Rgb, t: number): Rgb {
 	return [0, 1, 2].map((i) => a[i]! + (b[i]! - a[i]!) * t) as Rgb;
-}
-
-function contrast(a: Rgb, b: Rgb): number {
-	const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
-	return (hi + 0.05) / (lo + 0.05);
-}
-
-/** WCAG relative luminance. */
-function luminance(rgb: Rgb): number {
-	const [r, g, b] = rgb.map((c) => {
-		const s = Math.round(c) / 255;
-		return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-	}) as Rgb;
-	return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
